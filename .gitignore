@@ -1,0 +1,21 @@
+/backend/CourierParcelTrackingSystem.API/
+# Ignore complete Backend API project
+/backend/CourierParcelTrackingSystemAPI/
+
+# Ignore Visual Studio temporary files
+.vs/
+**/.vs/
+
+# Ignore build folders
+bin/
+obj/
+
+# Ignore Node modules
+node_modules/
+
+# Ignore frontend build
+dist/
+
+# Ignore environment files
+.env
+.env.*

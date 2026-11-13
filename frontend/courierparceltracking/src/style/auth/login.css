@@ -1,0 +1,85 @@
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  padding: var(--space-6);
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 10% 10%, rgb(21 94 239 / 10%), transparent 34rem),
+    var(--color-page);
+}
+
+.login-card {
+  width: min(100%, 27rem);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.login-brand-icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #fff;
+  border-radius: 0.8rem;
+  background: var(--color-brand);
+  place-items: center;
+}
+
+.login-eyebrow {
+  margin-bottom: var(--space-2);
+  color: var(--color-brand);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-title {
+  margin-bottom: var(--space-2);
+  color: var(--color-text);
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.login-subtitle {
+  margin-bottom: var(--space-6);
+  color: var(--color-muted);
+}
+
+.login-card .form-label {
+  font-weight: 600;
+}
+
+.login-card .input-group-text {
+  color: var(--color-muted);
+  border-color: var(--color-border);
+  background: #f9fafb;
+}
+
+.login-card .form-control {
+  min-height: 2.8rem;
+  border-color: var(--color-border);
+}
+
+.login-submit {
+  min-height: 2.9rem;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  font-weight: 600;
+}
+
+.login-submit:hover {
+  border-color: var(--color-brand-dark);
+  background: var(--color-brand-dark);
+}

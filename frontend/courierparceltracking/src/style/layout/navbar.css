@@ -1,0 +1,193 @@
+.app-navbar {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  display: flex;
+  min-height: 5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 clamp(1.25rem, 3vw, 2.25rem);
+  border-bottom: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 94%);
+  backdrop-filter: blur(12px);
+}
+
+.app-navbar__page,
+.app-navbar__profile-button {
+  display: flex;
+  align-items: center;
+}
+
+.app-navbar__page {
+  min-width: 0;
+  gap: 0.9rem;
+}
+
+.app-navbar__eyebrow {
+  margin: 0 0 0.15rem;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.app-navbar__title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.app-navbar__menu-button {
+  display: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.app-navbar__profile {
+  position: relative;
+}
+
+.app-navbar__profile-button {
+  gap: 0.65rem;
+  padding: 0.35rem 0.2rem 0.35rem 0.5rem;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  text-align: left;
+}
+
+.app-navbar__avatar {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  flex: 0 0 2.3rem;
+  color: var(--color-brand);
+  border: 1px solid #d6e4ff;
+  border-radius: 50%;
+  background: #eef4ff;
+  place-items: center;
+}
+
+.app-navbar__profile-copy {
+  display: flex;
+  max-width: 12rem;
+  flex-direction: column;
+}
+
+.app-navbar__user-name {
+  overflow: hidden;
+  font-size: 0.81rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-navbar__user-role {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-navbar__chevron {
+  color: var(--color-muted);
+}
+
+.app-navbar__profile-menu {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  width: min(17rem, 85vw);
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.app-navbar__profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-navbar__profile-name {
+  font-size: 0.83rem;
+  font-weight: 650;
+}
+
+.app-navbar__profile-role {
+  color: var(--color-brand);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.app-navbar__profile-email {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+}
+
+.app-navbar__logout-button {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 0.45rem;
+  color: #b42318;
+  background: transparent;
+  font-size: 0.83rem;
+  text-align: left;
+}
+
+.app-navbar__logout-button:hover {
+  background: #fef3f2;
+}
+
+.app-navbar__menu-button:focus-visible,
+.app-navbar__profile-button:focus-visible,
+.app-navbar__logout-button:focus-visible,
+.app-sidebar__link:focus-visible,
+.app-sidebar__collapse:focus-visible,
+.app-sidebar__mobile-close:focus-visible {
+  outline: 3px solid rgb(21 94 239 / 55%);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767.98px) {
+  .app-navbar {
+    min-height: 4.25rem;
+    padding: 0 1rem;
+  }
+
+  .app-navbar__menu-button {
+    display: inline-flex;
+  }
+
+  .app-navbar__eyebrow {
+    display: none;
+  }
+
+  .app-navbar__title {
+    font-size: 1rem;
+  }
+
+  .app-navbar__profile-copy,
+  .app-navbar__chevron {
+    display: none;
+  }
+}
