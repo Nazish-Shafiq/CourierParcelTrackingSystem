@@ -1,6 +1,5 @@
 /backend/CourierParcelTrackingSystem.API/
 # Ignore complete Backend API project
-/backend/CourierParcelTrackingSystemAPI/
 
 # Ignore Visual Studio temporary files
 .vs/

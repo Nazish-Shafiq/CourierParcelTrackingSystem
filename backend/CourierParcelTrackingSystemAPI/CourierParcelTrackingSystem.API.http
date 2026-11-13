@@ -1,0 +1,21 @@
+@CourierParcelTrackingSystem.API_HostAddress = http://localhost:5014
+
+### Get users
+GET {{CourierParcelTrackingSystem.API_HostAddress}}/api/users
+Accept: application/json
+
+### Get customers
+GET {{CourierParcelTrackingSystem.API_HostAddress}}/api/customers
+Accept: application/json
+
+### Get hubs
+GET {{CourierParcelTrackingSystem.API_HostAddress}}/api/hubs
+Accept: application/json
+
+### Get parcel statuses
+GET {{CourierParcelTrackingSystem.API_HostAddress}}/api/parcel-statuses
+Accept: application/json
+
+### Get parcels
+GET {{CourierParcelTrackingSystem.API_HostAddress}}/api/parcels
+Accept: application/json
