@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/couriers")]
 public class CourierController : ControllerBase
@@ -39,6 +39,19 @@ public class CourierController : ControllerBase
         );
     }
 
+    [HttpGet("eligible-users")]
+    [ProducesResponseType(
+        typeof(ApiResponse<IReadOnlyList<EligibleCourierUserDto>>),
+        StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEligibleCourierUsers(
+        [FromQuery] int? excludeCourierId)
+    {
+        var result = await _service.GetEligibleCourierUsersAsync(excludeCourierId);
+        return Ok(ApiResponse<IReadOnlyList<EligibleCourierUserDto>>.Ok(
+            result,
+            "Eligible Courier login accounts retrieved successfully."));
+    }
+
     // Get courier by ID.
     [HttpGet("{id:int}")]
     [ProducesResponseType(
@@ -67,19 +80,22 @@ public class CourierController : ControllerBase
     public async Task<IActionResult> Create(
         [FromBody] CreateCourierRequestDto request)
     {
-        // Get logged-in user's ID from JWT token.
-        int? createdBy = GetCurrentUserId();
-
-        var result = await _service.CreateAsync(request, createdBy);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.CourierId },
-            ApiResponse<CourierResponseDto>.Ok(
-                result,
-                "Courier created successfully."
-            )
-        );
+        try
+        {
+            var result = await _service.CreateAsync(request, GetCurrentUserId());
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = result.CourierId },
+                ApiResponse<CourierResponseDto>.Ok(result, "Courier created successfully."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ApiResponse<CourierResponseDto>.Fail(ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<CourierResponseDto>.Fail(ex.Message));
+        }
     }
 
     // Update an existing courier.
@@ -89,31 +105,27 @@ public class CourierController : ControllerBase
         StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] UpdateCourierRequestDto request)
     {
-        // Get logged-in user's ID from JWT token.
-        int? updatedBy = GetCurrentUserId();
-
-        var result = await _service.UpdateAsync(
-            id,
-            request,
-            updatedBy);
-
-        if (result == null)
+        try
         {
-            return NotFound(
-                ApiResponse<CourierResponseDto>.Fail(
-                    "Courier not found."));
-        }
+            var result = await _service.UpdateAsync(id, request, GetCurrentUserId());
+            if (result == null)
+                return NotFound(ApiResponse<CourierResponseDto>.Fail("Courier not found."));
 
-        return Ok(
-            ApiResponse<CourierResponseDto>.Ok(
-                result,
-                "Courier updated successfully."
-            )
-        );
+            return Ok(ApiResponse<CourierResponseDto>.Ok(result, "Courier updated successfully."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ApiResponse<CourierResponseDto>.Fail(ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<CourierResponseDto>.Fail(ex.Message));
+        }
     }
 
     // Soft delete a courier.

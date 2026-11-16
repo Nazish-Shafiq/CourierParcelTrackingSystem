@@ -54,6 +54,8 @@ The implementation uses the role IDs already present in the database:
 - Booking Agent can create Customer Viewer accounts.
 - A customer registration creates the linked `User`, `UserRole`, and `Customer` records in
   one database transaction.
+- A Courier staff registration creates the linked `User`, `UserRole`, and `Courier` records in
+  one database transaction. Courier registrations require a phone number; vehicle details are optional.
 - Existing resource controllers require an authenticated JWT. Registration endpoints enforce
   their creator role.
 
@@ -63,11 +65,15 @@ The implementation uses the role IDs already present in the database:
 |---|---|---|
 | POST | `/api/auth/bootstrap-admin` | Anonymous + one-time bootstrap key |
 | POST | `/api/auth/login` | Anonymous |
+| GET | `/api/auth/staff-roles` | Admin |
 | POST | `/api/auth/register-staff` | Admin |
 | POST | `/api/auth/register-customer` | Booking Agent |
 | GET | `/api/auth/me` | Authenticated |
 | POST | `/api/auth/logout` | Authenticated |
 | GET | `/api/users` and other resource APIs | Authenticated |
+
+Courier management also provides `GET /api/couriers/eligible-users` to Admins
+for selecting an active Courier login that does not yet have a profile.
 
 ## Swagger test sequence
 
@@ -77,11 +83,15 @@ The implementation uses the role IDs already present in the database:
 4. Click Swagger's **Authorize** button and paste the token (without adding `Bearer `; Swagger
    supplies the scheme).
 5. Call `/api/auth/me` and a protected resource endpoint.
-6. As Admin, call `/api/auth/register-staff` with `roleId` 2, 3, or 4.
-7. Log in as the Booking Agent and use `/api/auth/register-customer`.
-8. Try the staff/customer registration endpoints with the wrong role and verify a `403`.
-9. Call a protected endpoint without a token and verify a `401`.
-10. Test invalid login credentials and verify a `401`.
+6. As Admin, call `/api/auth/staff-roles` to retrieve active staff role IDs, then register a Booking Agent,
+   Dispatcher, or Courier using the corresponding `roleId`. Courier registration also accepts optional
+   `vehicleType` and `vehicleNumber`; its profile is created and linked in the same transaction.
+7. In Courier management, use `/api/couriers/eligible-users` to find an existing Courier login before
+   creating a profile; this operation does not create or change the login password.
+8. Log in as the Booking Agent and use `/api/auth/register-customer`.
+9. Try the staff/customer registration endpoints with the wrong role and verify a `403`.
+10. Call a protected endpoint without a token and verify a `401`.
+11. Test invalid login credentials and verify a `401`.
 
 ## Logout behavior
 
@@ -98,6 +108,5 @@ dotnet build
 dotnet run
 ```
 
-The API must be run with the existing SQL Server database available. This packaging environment
-does not have the .NET SDK, so a local `dotnet build` and live SQL/Swagger test must be performed
-in Visual Studio or on the user's development machine.
+The API must be run with the existing SQL Server database available. A live SQL/Swagger
+registration test requires that database; the backend solution can be built with `dotnet build`.

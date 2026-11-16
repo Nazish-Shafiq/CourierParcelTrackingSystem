@@ -8,4 +8,6 @@ public class RegisterStaffRequestDto
     [Required, StringLength(150)] public string FullName { get; set; } = null!;
     [StringLength(30)] public string? Phone { get; set; }
     [Required] public int RoleId { get; set; }
+    [StringLength(50)] public string? VehicleType { get; set; }
+    [StringLength(30)] public string? VehicleNumber { get; set; }
 }

@@ -10,6 +10,8 @@ public interface ICourierService
     Task<PagedResponseDto<CourierResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search);
+    Task<IReadOnlyList<EligibleCourierUserDto>> GetEligibleCourierUsersAsync(
+        int? excludeCourierId = null);
 
     // Get courier by ID.
     Task<CourierResponseDto?> GetByIdAsync(int id);

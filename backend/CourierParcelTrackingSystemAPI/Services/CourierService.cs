@@ -33,6 +33,20 @@ public class CourierService : ICourierService
         };
     }
 
+    public async Task<IReadOnlyList<EligibleCourierUserDto>> GetEligibleCourierUsersAsync(
+        int? excludeCourierId = null)
+    {
+        var users = await _repository.GetEligibleCourierUsersAsync(excludeCourierId);
+        return users.Select(user => new EligibleCourierUserDto
+        {
+            UserId = user.UserId,
+            UserName = user.UserName,
+            FullName = user.FullName,
+            Email = user.Email,
+            Phone = user.Phone
+        }).ToList();
+    }
+
     // Get courier by ID.
     public async Task<CourierResponseDto?> GetByIdAsync(int id)
     {
@@ -46,21 +60,13 @@ public class CourierService : ICourierService
         CreateCourierRequestDto request,
         int? createdBy)
     {
-        // Generate a unique employee code.
-        string employeeCode;
-
-        do
-        {
-            employeeCode =
-                $"COU-{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
-        }
-        while (await _repository.EmployeeCodeExistsAsync(employeeCode));
+        await EnsureUserCanBeLinkedAsync(request.UserId);
 
         // Create courier entity.
         var courier = new Courier
         {
             UserId = request.UserId,
-            EmployeeCode = employeeCode,
+            EmployeeCode = await _repository.GenerateUniqueEmployeeCodeAsync(),
             FullName = request.FullName.Trim(),
             Phone = request.Phone.Trim(),
             Email = Normalize(request.Email),
@@ -95,8 +101,13 @@ public class CourierService : ICourierService
         if (courier == null)
             return null;
 
+        if (request.UserId.HasValue)
+        {
+            await EnsureUserCanBeLinkedAsync(request.UserId.Value, id);
+            courier.UserId = request.UserId.Value;
+        }
+
         // Update courier details.
-        courier.UserId = request.UserId;
         courier.FullName = request.FullName.Trim();
         courier.Phone = request.Phone.Trim();
         courier.Email = Normalize(request.Email);
@@ -145,6 +156,15 @@ public class CourierService : ICourierService
         return string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
+    }
+
+    private async Task EnsureUserCanBeLinkedAsync(int userId, int? excludeCourierId = null)
+    {
+        if (!await _repository.IsActiveCourierUserAsync(userId))
+            throw new ArgumentException("The linked user must be an active account with the Courier role.");
+
+        if (await _repository.UserHasCourierProfileAsync(userId, excludeCourierId))
+            throw new InvalidOperationException("This user already has a Courier profile.");
     }
 
     // Map Courier entity to CourierResponseDto.

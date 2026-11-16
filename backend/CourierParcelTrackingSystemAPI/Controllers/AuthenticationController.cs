@@ -36,6 +36,17 @@ public class AuthController : ControllerBase
     {
         try { return StatusCode(201, ApiResponse<string>.Ok(await _service.RegisterStaffAsync(request, CurrentUserId()), "Staff account created.")); }
         catch (InvalidOperationException ex) { return Conflict(ApiResponse<string>.Fail(ex.Message)); }
+        catch (ArgumentException ex) { return BadRequest(ApiResponse<string>.Fail(ex.Message)); }
+    }
+
+    [HttpGet("staff-roles")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetStaffRoles()
+    {
+        var roles = await _service.GetStaffRolesAsync();
+        return Ok(ApiResponse<IReadOnlyList<StaffRoleOptionDto>>.Ok(
+            roles,
+            "Staff roles retrieved successfully."));
     }
 
     [HttpPost("register-customer")]

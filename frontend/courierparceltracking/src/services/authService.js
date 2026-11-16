@@ -9,6 +9,25 @@ function ensureApiUrl() {
   }
 }
 
+function ensureSecurePasswordTransport() {
+  if (typeof window === 'undefined') return
+
+  const apiUrl = new URL(API_BASE_URL, window.location.origin)
+  if (apiUrl.protocol === 'https:') return
+
+  const proxyTarget = import.meta.env.VITE_API_PROXY_TARGET
+  const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(apiUrl.hostname)
+  const usesLocalHttpsProxy = import.meta.env.DEV
+    && API_BASE_URL.startsWith('/')
+    && isLocalHost
+    && typeof proxyTarget === 'string'
+    && proxyTarget.trim().toLowerCase().startsWith('https://')
+
+  if (!usesLocalHttpsProxy) {
+    throw new ApiError('Password requests require an HTTPS API connection.')
+  }
+}
+
 function normalizeUser(userData) {
   if (!userData || !Array.isArray(userData.roles)) {
     throw new ApiError('The authentication response did not contain the expected user and role data.')
@@ -26,12 +45,14 @@ function normalizeUser(userData) {
 
 export async function bootstrapAdmin(request) {
   ensureApiUrl()
+  ensureSecurePasswordTransport()
   const response = await axiosInstance.post(`${AUTH_API_PATH}/bootstrap-admin`, request)
   return getResponseData(response.data)
 }
 
 export async function login({ userNameOrEmail, password }) {
   ensureApiUrl()
+  ensureSecurePasswordTransport()
   const response = await axiosInstance.post(`${AUTH_API_PATH}/login`, {
     userNameOrEmail,
     password,
@@ -52,12 +73,33 @@ export async function login({ userNameOrEmail, password }) {
 
 export async function registerStaff(request) {
   ensureApiUrl()
+  ensureSecurePasswordTransport()
   const response = await axiosInstance.post(`${AUTH_API_PATH}/register-staff`, request)
   return getResponseData(response.data)
 }
 
+export async function getStaffRoles(signal) {
+  ensureApiUrl()
+  const response = await axiosInstance.get(`${AUTH_API_PATH}/staff-roles`, { signal })
+  const roles = getResponseData(response.data)
+
+  if (!Array.isArray(roles)) {
+    throw new ApiError('The staff roles response did not contain a role list.')
+  }
+
+  return roles.map((role) => {
+    const roleId = Number(role?.roleId)
+    if (!Number.isInteger(roleId) || roleId <= 0 || typeof role?.roleName !== 'string') {
+      throw new ApiError('The staff roles response contained an invalid role.')
+    }
+
+    return { label: role.roleName, value: roleId }
+  })
+}
+
 export async function registerCustomer(request) {
   ensureApiUrl()
+  ensureSecurePasswordTransport()
   const response = await axiosInstance.post(`${AUTH_API_PATH}/register-customer`, request)
   return getResponseData(response.data)
 }

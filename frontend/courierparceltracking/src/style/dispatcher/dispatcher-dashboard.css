@@ -1,3 +1,44 @@
 .role-dashboard--dispatcher {
   --dashboard-accent: #1570ef;
 }
+
+.dispatcher-quick-links {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.dispatcher-quick-link {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: var(--color-text);
+  display: inline-flex;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.dispatcher-quick-link:hover {
+  border-color: #b2ccff;
+  box-shadow: 0 0.35rem 1rem rgb(16 24 40 / 8%);
+  transform: translateY(-1px);
+}
+
+.dispatcher-quick-link__icon {
+  align-items: center;
+  background: #eff8ff;
+  border-radius: 0.6rem;
+  color: #1570ef;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.dispatcher-dashboard__notice {
+  color: var(--color-muted);
+  margin: 0;
+}

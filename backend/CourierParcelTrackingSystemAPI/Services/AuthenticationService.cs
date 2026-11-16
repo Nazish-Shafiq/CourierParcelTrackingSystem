@@ -12,20 +12,26 @@ using System.Text;
 namespace CourierParcelTrackingSystem.API.Services;
 public class AuthService : IAuthService
 {
-    private const int AdminRoleId = 1;
-    private const int BookingAgentRoleId = 2;
-    private const int DispatcherRoleId = 3;
-    private const int CourierRoleId = 4;
-    private const int CustomerViewerRoleId = 5;
+    private const string AdminRoleName = "Admin";
+    private const string CustomerViewerRoleName = "Customer Viewer";
+    private const string CourierRoleName = "Courier";
+    private static readonly HashSet<string> StaffRoleNames = new(
+        new[] { "Booking Agent", "Dispatcher", CourierRoleName },
+        StringComparer.OrdinalIgnoreCase);
     private readonly IAuthRepository _repository;
+    private readonly ICourierRepository _courierRepository;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly JwtSettings _jwt;
     private readonly IConfiguration _configuration;
 
-    public AuthService(IAuthRepository repository, IPasswordHasher<User> passwordHasher,
+    public AuthService(
+        IAuthRepository repository,
+        ICourierRepository courierRepository,
+        IPasswordHasher<User> passwordHasher,
         IOptions<JwtSettings> jwtOptions, IConfiguration configuration)
     {
         _repository = repository;
+        _courierRepository = courierRepository;
         _passwordHasher = passwordHasher;
         _jwt = jwtOptions.Value;
         _configuration = configuration;
@@ -42,7 +48,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("An active Admin already exists. Bootstrap is disabled.");
 
         await EnsureUserIsUniqueAsync(request.UserName, request.Email);
-        var role = await GetRequiredRoleAsync(AdminRoleId, "Admin");
+        var role = await GetRequiredRoleAsync(AdminRoleName);
         var user = NewUser(request.UserName, request.Email, request.FullName, request.Phone);
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
         await _repository.CreateAccountAsync(user, role, null);
@@ -51,25 +57,60 @@ public class AuthService : IAuthService
 
     public async Task<string> RegisterStaffAsync(RegisterStaffRequestDto request, int createdBy)
     {
-        var expectedRole = request.RoleId switch
-        {
-            BookingAgentRoleId => "Booking Agent",
-            DispatcherRoleId => "Dispatcher",
-            CourierRoleId => "Courier",
-            _ => throw new InvalidOperationException("Admin can create only Booking Agent, Dispatcher, or Courier accounts.")
-        };
+        var role = await _repository.GetActiveRoleByIdAsync(request.RoleId);
+        if (role == null || !StaffRoleNames.Contains(role.RoleName))
+            throw new InvalidOperationException(
+                "Admin can create only Booking Agent, Dispatcher, or Courier accounts.");
+
+        var isCourier = string.Equals(
+            role.RoleName,
+            CourierRoleName,
+            StringComparison.OrdinalIgnoreCase);
+        if (isCourier &&
+            (string.IsNullOrWhiteSpace(request.Phone) || request.Phone.Trim().Length < 7))
+            throw new ArgumentException(
+                "Courier phone numbers must contain at least 7 characters.",
+                nameof(request.Phone));
+
         await EnsureUserIsUniqueAsync(request.UserName, request.Email);
-        var role = await GetRequiredRoleAsync(request.RoleId, expectedRole);
         var user = NewUser(request.UserName, request.Email, request.FullName, request.Phone);
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
-        await _repository.CreateAccountAsync(user, role, createdBy);
-        return $"{expectedRole} account created successfully.";
+
+        Courier? courier = null;
+        if (isCourier)
+        {
+            courier = new Courier
+            {
+                EmployeeCode = await _courierRepository.GenerateUniqueEmployeeCodeAsync(),
+                FullName = request.FullName.Trim(),
+                Phone = request.Phone!.Trim(),
+                Email = Normalize(request.Email),
+                VehicleType = Normalize(request.VehicleType),
+                VehicleNumber = Normalize(request.VehicleNumber)
+            };
+        }
+
+        await _repository.CreateAccountAsync(user, role, createdBy, courier: courier);
+        return $"{role.RoleName} account created successfully.";
+    }
+
+    public async Task<IReadOnlyList<StaffRoleOptionDto>> GetStaffRolesAsync()
+    {
+        var roles = await _repository.GetActiveRolesAsync();
+        return roles
+            .Where(role => StaffRoleNames.Contains(role.RoleName))
+            .Select(role => new StaffRoleOptionDto
+            {
+                RoleId = role.RoleId,
+                RoleName = role.RoleName
+            })
+            .ToList();
     }
 
     public async Task<string> RegisterCustomerAsync(RegisterCustomerRequestDto request, int createdBy)
     {
         await EnsureUserIsUniqueAsync(request.UserName, request.Email);
-        var role = await GetRequiredRoleAsync(CustomerViewerRoleId, "Customer Viewer");
+        var role = await GetRequiredRoleAsync(CustomerViewerRoleName);
         var user = NewUser(request.UserName, request.Email, request.FullName, request.Phone);
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
         var customer = new Customer
@@ -139,13 +180,16 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Username or email already exists.");
     }
 
-    private async Task<Role> GetRequiredRoleAsync(int roleId, string roleName)
+    private async Task<Role> GetRequiredRoleAsync(string roleName)
     {
-        var role = await _repository.GetActiveRoleByIdAsync(roleId);
+        var role = await _repository.GetActiveRoleByNameAsync(roleName);
         if (role == null || !string.Equals(role.RoleName, roleName, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"The {roleName} role is unavailable or inactive.");
         return role;
     }
+
+    private static string? Normalize(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static User NewUser(string username, string email, string fullName, string? phone) => new()
     {

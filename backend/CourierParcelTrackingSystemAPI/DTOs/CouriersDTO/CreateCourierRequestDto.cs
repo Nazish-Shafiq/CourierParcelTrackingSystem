@@ -4,7 +4,8 @@ namespace CourierParcelTrackingSystem.API.DTOs.CouriersDTO;
 
 public class CreateCourierRequestDto
 {
-    public int? UserId { get; set; }
+    [Range(1, int.MaxValue)]
+    public int UserId { get; set; }
 
     [Required]
     [StringLength(150, MinimumLength = 2)]

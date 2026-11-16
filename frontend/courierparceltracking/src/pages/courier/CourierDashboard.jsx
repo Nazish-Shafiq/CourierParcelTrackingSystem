@@ -1,7 +1,9 @@
 import { useCallback } from 'react'
 import { MapPin, Package, Truck } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import DashboardSection from '../../components/common/DashboardSection'
+import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import PageHeader from '../../components/common/PageHeader'
@@ -19,8 +21,10 @@ function formatDate(value) {
 
 function CourierDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const loadDashboard = useCallback((signal) => getCourierDashboard(signal), [])
   const { data, error, isLoading, refresh } = useDashboardData(loadDashboard)
+  const assignedParcels = Array.isArray(data?.assignedParcels) ? data.assignedParcels : []
 
   return (
     <div className="role-dashboard role-dashboard--courier">
@@ -37,7 +41,12 @@ function CourierDashboard() {
       {data && (
         <>
           <div className="dashboard-stat-grid">
-            <DashboardStatCard icon={Package} label="Total assigned parcels" value={data.totalAssignedParcels} />
+            <DashboardStatCard
+              icon={Package}
+              label="Total assigned parcels"
+              onClick={() => navigate('/courier/assigned-parcels')}
+              value={data.totalAssignedParcels}
+            />
             <DashboardStatCard icon={Truck} label="Parcels in transit" value={data.parcelsInTransit} accent="amber" />
             <DashboardStatCard icon={MapPin} label="Parcels delivered" value={data.parcelsDelivered} accent="green" />
           </div>
@@ -55,9 +64,24 @@ function CourierDashboard() {
                 { key: 'recipientCity', header: 'Destination' },
                 { key: 'assignedAt', header: 'Assigned', render: (row) => formatDate(row.assignedAt) },
               ]}
-              rows={data.assignedParcels}
+              emptyState={(
+                <EmptyState
+                  description="No active parcel assignments are currently linked to your courier account."
+                  title="No assigned parcels"
+                />
+              )}
+              rows={assignedParcels.slice(0, 5)}
               getRowKey={(row) => row.parcelAssignmentId}
             />
+          </DashboardSection>
+
+          <DashboardSection title="Quick action">
+            <Link className="courier-quick-link" to="/courier/assigned-parcels">
+              <span className="courier-quick-link__icon">
+                <Package aria-hidden="true" size={18} />
+              </span>
+              <span>Review my assigned parcels</span>
+            </Link>
           </DashboardSection>
         </>
       )}

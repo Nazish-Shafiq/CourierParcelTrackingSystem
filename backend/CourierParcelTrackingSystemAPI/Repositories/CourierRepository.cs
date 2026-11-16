@@ -47,6 +47,22 @@ public class CourierRepository : ICourierRepository
         return await query.ToPagedResponseAsync(pagination);
     }
 
+    public Task<List<User>> GetEligibleCourierUsersAsync(int? excludeCourierId = null) =>
+        _context.Users
+            .AsNoTracking()
+            .Where(user =>
+                user.IsActive && !user.IsDeleted &&
+                user.UserRoleUsers.Any(userRole =>
+                    userRole.Role.RoleName == "Courier" &&
+                    userRole.Role.IsActive && !userRole.Role.IsDeleted) &&
+                !_context.Couriers.Any(courier =>
+                    courier.UserId == user.UserId &&
+                    (!excludeCourierId.HasValue ||
+                     courier.CourierId != excludeCourierId.Value)))
+            .OrderBy(user => user.FullName)
+            .ThenBy(user => user.UserName)
+            .ToListAsync();
+
     // Get courier by ID.
     // Returns a tracked entity for update and soft delete.
     public async Task<Courier?> GetByIdAsync(int id)
@@ -71,6 +87,35 @@ public class CourierRepository : ICourierRepository
         }
 
         return await query.AnyAsync();
+    }
+
+    public async Task<string> GenerateUniqueEmployeeCodeAsync()
+    {
+        string employeeCode;
+        do
+        {
+            employeeCode = $"COU-{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+        }
+        while (await EmployeeCodeExistsAsync(employeeCode));
+
+        return employeeCode;
+    }
+
+    public Task<bool> IsActiveCourierUserAsync(int userId) =>
+        _context.Users.AnyAsync(user =>
+            user.UserId == userId &&
+            user.IsActive && !user.IsDeleted &&
+            user.UserRoleUsers.Any(userRole =>
+                userRole.Role.RoleName == "Courier" &&
+                userRole.Role.IsActive && !userRole.Role.IsDeleted));
+
+    public Task<bool> UserHasCourierProfileAsync(int userId, int? excludeCourierId = null)
+    {
+        var query = _context.Couriers.Where(courier => courier.UserId == userId);
+        if (excludeCourierId.HasValue)
+            query = query.Where(courier => courier.CourierId != excludeCourierId.Value);
+
+        return query.AnyAsync();
     }
 
     // Add a new courier.

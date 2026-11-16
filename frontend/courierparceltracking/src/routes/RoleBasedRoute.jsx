@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { hasAnyRole } from '../utils/roleAccess.js'
 
 function RoleBasedRoute({ allowedRoles = [] }) {
   const { status, user } = useAuth()
@@ -13,10 +14,7 @@ function RoleBasedRoute({ allowedRoles = [] }) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  const roleNames = new Set(user.roles.map((role) => role.toLowerCase()))
-  const hasAccess = allowedRoles.some((role) => roleNames.has(role.toLowerCase()))
-
-  if (!hasAccess) {
+  if (!hasAnyRole(user.roles, allowedRoles)) {
     return <Navigate to="/access-denied" replace />
   }
 

@@ -1,13 +1,10 @@
 import { useState } from 'react'
 import { KeyRound, PackageCheck, UserRound } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import '../../style/auth/login.css'
 
 function Login() {
   const { login, authError } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
   const [userNameOrEmail, setUserNameOrEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
@@ -20,7 +17,6 @@ function Login() {
 
     try {
       await login({ userNameOrEmail: userNameOrEmail.trim(), password })
-      navigate(location.state?.from?.pathname || '/', { replace: true })
     } catch (error) {
       setFormError(error.message)
     } finally {

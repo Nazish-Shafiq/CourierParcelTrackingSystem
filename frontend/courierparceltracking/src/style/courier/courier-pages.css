@@ -1,0 +1,177 @@
+.courier-parcel-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+  gap: 1rem;
+  align-items: end;
+}
+
+.courier-parcel-list-card,
+.courier-parcel-details {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+}
+
+.courier-parcel-list-card {
+  overflow: hidden;
+}
+
+.courier-parcel-list-card .data-table__scroll {
+  overflow-x: auto;
+}
+
+.courier-parcel-list-card .data-table__actions {
+  white-space: nowrap;
+}
+
+.courier-api-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.courier-parcel-details__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.1rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.courier-parcel-details__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.courier-parcel-details__grid > div {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
+}
+
+.courier-parcel-details__grid dt {
+  margin-bottom: 0.35rem;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.courier-parcel-details__grid dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.courier-tracking-timeline {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  background: var(--color-surface);
+}
+
+.courier-tracking-event {
+  display: grid;
+  grid-template-columns: 0.7rem minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.courier-tracking-event__marker {
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-top: 0.45rem;
+  border-radius: 50%;
+  background: #039855;
+  box-shadow: 0 0 0 0.25rem #ecfdf3;
+}
+
+.courier-tracking-event__content {
+  min-width: 0;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.courier-tracking-event__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.courier-tracking-event__heading time {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.courier-tracking-event__content h2 {
+  margin: 0.55rem 0 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.courier-tracking-event__content h2 span {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.courier-tracking-event__content p {
+  margin: 0.45rem 0 0;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.courier-quick-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  text-decoration: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.courier-quick-link:hover {
+  transform: translateY(-1px);
+  border-color: #a6f4c5;
+  box-shadow: 0 0.35rem 1rem rgb(16 24 40 / 8%);
+}
+
+.courier-quick-link__icon {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  color: #027a48;
+  background: #ecfdf3;
+}
+
+@media (max-width: 700px) {
+  .courier-parcel-toolbar,
+  .courier-parcel-details__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .courier-parcel-list-card,
+  .courier-parcel-details,
+  .courier-tracking-timeline {
+    padding: 0.85rem;
+  }
+}

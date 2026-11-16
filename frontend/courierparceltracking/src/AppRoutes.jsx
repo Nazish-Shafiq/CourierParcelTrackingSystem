@@ -1,8 +1,14 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import DashboardLayout from './components/layout/DashboardLayout'
 import PageHeader from './components/common/PageHeader'
-import { getDashboardPathForRoles, getNavigationItem, ROLE_NAMES } from './constants/navigation'
+import {
+  getDashboardPathForRoles,
+  getNavigationItem,
+  getPostLoginRedirect,
+  ROLE_NAMES,
+} from './constants/navigation'
 import { useAuth } from './hooks/useAuth'
+import { hasAnyRole } from './utils/roleAccess.js'
 import {
   AdminCouriersPage,
   AdminCustomersPage,
@@ -14,17 +20,41 @@ import {
 } from './pages/admin/AdminManagementPages'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
+import BookingAgentBookParcelPage from './pages/bookingAgent/BookingAgentBookParcelPage'
+import BookingAgentBookingsPage from './pages/bookingAgent/BookingAgentBookingsPage'
+import BookingAgentCustomersPage from './pages/bookingAgent/BookingAgentCustomersPage'
 import BookingAgentDashboard from './pages/bookingAgent/BookingAgentDashboard'
+import BookingAgentRegisterCustomerPage from './pages/bookingAgent/BookingAgentRegisterCustomerPage'
+import BookingAgentTrackParcelPage from './pages/bookingAgent/BookingAgentTrackParcelPage'
 import Login from './pages/auth/Login'
 import CourierDashboard from './pages/courier/CourierDashboard'
+import {
+  CourierAssignedParcelsPage,
+  CourierParcelDetailsPage,
+  CourierParcelTrackingPage,
+} from './pages/courier/CourierParcelPages'
 import CustomerDashboard from './pages/customer/CustomerDashboard'
 import DispatcherDashboard from './pages/dispatcher/DispatcherDashboard'
+import {
+  DispatcherAssignParcelPage,
+  DispatcherAssignmentsPage,
+} from './pages/dispatcher/DispatcherAssignmentPages'
+import {
+  DispatcherCouriersPage,
+  DispatcherHubsPage,
+  DispatcherRoutesPage,
+  DispatcherTrackingPage,
+} from './pages/dispatcher/DispatcherReferencePages'
+import {
+  DispatcherParcelsPage,
+  DispatcherUnassignedParcelsPage,
+} from './pages/dispatcher/DispatcherParcelPages'
 import ProtectedRoute from './routes/ProtectedRoute'
 import RoleBasedRoute from './routes/RoleBasedRoute'
 
 function DashboardIndex() {
   const { user } = useAuth()
-  const dashboardPath = getDashboardPathForRoles(user.roles)
+  const dashboardPath = getDashboardPathForRoles(user?.roles)
 
   return <Navigate to={dashboardPath || '/access-denied'} replace />
 }
@@ -38,10 +68,7 @@ function NavigationPlaceholder() {
     return <Navigate to="/" replace />
   }
 
-  const roleNames = new Set(user.roles.map((role) => role.toLowerCase()))
-  const hasAccess = navigationItem.allowedRoles.some((role) => roleNames.has(role.toLowerCase()))
-
-  if (!hasAccess) {
+  if (!hasAnyRole(user?.roles, navigationItem.allowedRoles)) {
     return <Navigate to="/access-denied" replace />
   }
 
@@ -73,7 +100,12 @@ function LoginRoute() {
   }
 
   if (user) {
-    return <Navigate to={location.state?.from?.pathname || '/'} replace />
+    return (
+      <Navigate
+        replace
+        to={getPostLoginRedirect(user.roles, location.state?.from)}
+      />
+    )
   }
 
   return <Login />
@@ -99,12 +131,28 @@ function AppRoutes() {
           </Route>
           <Route element={<RoleBasedRoute allowedRoles={[ROLE_NAMES.BOOKING_AGENT]} />}>
             <Route path="dashboard/booking-agent" element={<BookingAgentDashboard />} />
+            <Route path="booking/register-customer" element={<BookingAgentRegisterCustomerPage />} />
+            <Route path="booking/customers" element={<BookingAgentCustomersPage />} />
+            <Route path="booking/book-parcel" element={<BookingAgentBookParcelPage />} />
+            <Route path="booking/bookings" element={<BookingAgentBookingsPage />} />
+            <Route path="booking/track-parcel" element={<BookingAgentTrackParcelPage />} />
           </Route>
           <Route element={<RoleBasedRoute allowedRoles={[ROLE_NAMES.DISPATCHER]} />}>
             <Route path="dashboard/dispatcher" element={<DispatcherDashboard />} />
+            <Route path="dispatch/parcels" element={<DispatcherParcelsPage />} />
+            <Route path="dispatch/unassigned-parcels" element={<DispatcherUnassignedParcelsPage />} />
+            <Route path="dispatch/assign" element={<DispatcherAssignParcelPage />} />
+            <Route path="dispatch/assignments" element={<DispatcherAssignmentsPage />} />
+            <Route path="dispatch/routes" element={<DispatcherRoutesPage />} />
+            <Route path="dispatch/couriers" element={<DispatcherCouriersPage />} />
+            <Route path="dispatch/hubs" element={<DispatcherHubsPage />} />
+            <Route path="dispatch/tracking" element={<DispatcherTrackingPage />} />
           </Route>
           <Route element={<RoleBasedRoute allowedRoles={[ROLE_NAMES.COURIER]} />}>
             <Route path="dashboard/courier" element={<CourierDashboard />} />
+            <Route path="courier/assigned-parcels" element={<CourierAssignedParcelsPage />} />
+            <Route path="courier/assigned-parcels/:parcelId" element={<CourierParcelDetailsPage />} />
+            <Route path="courier/assigned-parcels/:parcelId/tracking" element={<CourierParcelTrackingPage />} />
           </Route>
           <Route element={<RoleBasedRoute allowedRoles={[ROLE_NAMES.CUSTOMER_VIEWER]} />}>
             <Route path="dashboard/customer" element={<CustomerDashboard />} />

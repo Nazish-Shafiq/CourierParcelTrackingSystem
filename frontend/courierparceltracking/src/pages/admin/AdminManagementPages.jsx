@@ -1,7 +1,5 @@
-import { useMemo } from 'react'
 import AdminEntityManager from '../../components/admin/AdminEntityManager'
-import { useAuth } from '../../hooks/useAuth'
-import { registerStaff } from '../../services/authService'
+import { getStaffRoles, registerStaff } from '../../services/authService'
 import {
   couriersConfig,
   customersConfig,
@@ -12,43 +10,67 @@ import {
   usersConfig,
 } from './adminResourceConfigs'
 
+async function loadStaffRegistrationOptions(signal) {
+  const staffRoles = await getStaffRoles(signal)
+  if (!staffRoles.length) {
+    throw new Error('No active staff roles are available for registration.')
+  }
+  return { staffRoles }
+}
+
+function isCourierRoleSelected(values, options) {
+  return options.staffRoles?.some(
+    (role) => String(role.value) === String(values.roleId) && role.label === 'Courier',
+  ) ?? false
+}
+
+const staffUsersConfig = {
+  ...usersConfig,
+  description: 'View users and create staff accounts using active staff roles.',
+  create: registerStaff,
+  loadFormOptions: loadStaffRegistrationOptions,
+  fields: [
+    { name: 'userName', label: 'Username', required: true, minLength: 3, maxLength: 80 },
+    { name: 'email', label: 'Email', type: 'email', required: true, maxLength: 256 },
+    { name: 'password', label: 'Temporary password', type: 'password', required: true, minLength: 8, maxLength: 100 },
+    { name: 'fullName', label: 'Full name', required: true, maxLength: 150 },
+    {
+      name: 'phone',
+      label: 'Phone',
+      type: 'tel',
+      nullable: true,
+      maxLength: 30,
+      minLength: 7,
+      requiredWhen: isCourierRoleSelected,
+    },
+    {
+      name: 'roleId',
+      label: 'Role',
+      type: 'select',
+      required: true,
+      integer: true,
+      numeric: true,
+      optionsKey: 'staffRoles',
+    },
+    {
+      name: 'vehicleType',
+      label: 'Vehicle type',
+      nullable: true,
+      maxLength: 50,
+      visibleWhen: isCourierRoleSelected,
+    },
+    {
+      name: 'vehicleNumber',
+      label: 'Vehicle number',
+      nullable: true,
+      maxLength: 30,
+      visibleWhen: isCourierRoleSelected,
+    },
+  ],
+}
+
 export function AdminUsersPage() {
-  const { user } = useAuth()
-  const availableRoles = useMemo(() => {
-    if (
-      !Array.isArray(user?.roles)
-      || !Array.isArray(user?.roleIds)
-      || user.roles.length !== user.roleIds.length
-    ) {
-      return []
-    }
-
-    return user.roles
-      .map((role, index) => ({
-        label: role,
-        value: Number(user.roleIds[index]),
-      }))
-      .filter((role) => Number.isInteger(role.value) && role.value > 0)
-  }, [user])
-  const config = useMemo(() => ({
-    ...usersConfig,
-    description: availableRoles.length
-      ? 'View users and create staff accounts using roles returned for your authenticated Admin account.'
-      : 'View users. Staff creation requires valid role IDs from the backend role list.',
-    create: availableRoles.length ? registerStaff : undefined,
-    fields: availableRoles.length
-      ? [
-        { name: 'userName', label: 'Username', required: true, minLength: 3, maxLength: 80 },
-        { name: 'email', label: 'Email', type: 'email', required: true, maxLength: 256 },
-        { name: 'password', label: 'Temporary password', type: 'password', required: true, minLength: 8, maxLength: 100 },
-        { name: 'fullName', label: 'Full name', required: true, maxLength: 150 },
-        { name: 'phone', label: 'Phone', type: 'tel', nullable: true, maxLength: 30 },
-        { name: 'roleId', label: 'Role', type: 'select', required: true, integer: true, numeric: true, options: availableRoles },
-      ]
-      : [],
-  }), [availableRoles])
-
-  return <AdminEntityManager config={config} />
+  return <AdminEntityManager config={staffUsersConfig} />
 }
 
 export function AdminCustomersPage() {
