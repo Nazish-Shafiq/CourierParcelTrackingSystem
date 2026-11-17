@@ -8,11 +8,13 @@ public interface IParcelTrackingService
 {
     // Get tracking events with pagination.
     Task<PagedResponseDto<ParcelTrackingResponseDto>> GetPagedAsync(
-        PaginationRequestDto request);
+        PaginationRequestDto request,
+        int? courierUserId = null);
 
     // Get complete tracking history by tracking number.
     Task<List<ParcelTrackingResponseDto>> GetTrackingHistoryAsync(
-        string trackingNumber);
+        string trackingNumber,
+        int? courierUserId = null);
 
     // Add a new tracking event and update parcel's current status.
     Task<ParcelTrackingResponseDto> CreateStatusEventAsync(
@@ -24,4 +26,10 @@ public interface IParcelTrackingService
         long parcelId,
         UpdateParcelStatusRequestDto request,
         int? createdBy);
+
+    // Apply an approved Courier-only transition after checking ownership and state.
+    Task<ParcelTrackingResponseDto> UpdateCourierParcelStatusAsync(
+        long parcelId,
+        UpdateCourierParcelStatusRequestDto request,
+        int userId);
 }

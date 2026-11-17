@@ -36,9 +36,8 @@ authentication middleware may return ProblemDetails or an empty 401 instead.
 | Users          | `GET /api/users`                             | —                                     | —                               | `UserResponseDto[]`                                                    | Authenticated                                             |
 | Users          | `GET /api/users/{id}`                        | `id: int`                             | —                               | `UserResponseDto`; 404 when absent                                     | Authenticated                                             |
 | Couriers       | `GET /api/couriers`                          | `page`, `pageSize`, optional `search` | —                               | `PagedResponseDto<CourierResponseDto>`                                 | Admin                                                     |
-| Couriers       | `GET /api/couriers/eligible-users`            | optional `excludeCourierId`           | —                               | Active Courier login accounts without another linked profile           | Admin                                                     |
+| Couriers       | `GET /api/couriers/dispatch-options`         | —                                     | —                               | `CourierDispatchOptionDto[]`; active, available profiles with an active linked Courier user and no active assignment | Dispatcher                                                |
 | Couriers       | `GET /api/couriers/{id}`                     | `id: int`                             | —                               | `CourierResponseDto`; 404 when absent                                  | Admin                                                     |
-| Couriers       | `POST /api/couriers`                         | —                                     | `CreateCourierRequestDto` with required `userId` | `CourierResponseDto` (201)                         | Admin; links an existing active Courier login             |
 | Couriers       | `PUT /api/couriers/{id}`                     | `id: int`                             | `UpdateCourierRequestDto`       | `CourierResponseDto`; 404 when absent                                  | Admin; null `userId` does not clear an existing link      |
 | Couriers       | `DELETE /api/couriers/{id}`                  | `id: int`                             | —                               | `bool`                                                                 | Admin; soft delete                                        |
 | Customers      | `GET /api/customers`                         | `page`, `pageSize`, optional `search` | —                               | `PagedResponseDto<CustomerResponseDto>`                                | Authenticated                                             |
@@ -65,13 +64,14 @@ authentication middleware may return ProblemDetails or an empty 401 instead.
 | Assignments    | `GET /api/parcel-assignments`                | `page`, `pageSize`                    | —                               | `PagedResponseDto<ParcelAssignmentResponseDto>`                        | Authenticated                                             |
 | Assignments    | `GET /api/parcel-assignments/active`         | —                                     | —                               | `ParcelAssignmentResponseDto[]`                                        | Authenticated                                             |
 | Assignments    | `GET /api/parcel-assignments/{id}`           | `id: long`                            | —                               | `ParcelAssignmentResponseDto`; 404 when absent                         | Authenticated                                             |
-| Assignments    | `POST /api/parcel-assignments`               | —                                     | `AssignParcelRequestDto`        | `ParcelAssignmentResponseDto` (201)                                    | Authenticated                                             |
-| Assignments    | `PUT /api/parcel-assignments/{id}/reassign`  | `id: long`                            | `ReassignParcelRequestDto`      | `ParcelAssignmentResponseDto`                                          | Authenticated                                             |
-| Assignments    | `PUT /api/parcel-assignments/{id}/unassign`  | `id: long`                            | —                               | `string`                                                               | Authenticated                                             |
+| Assignments    | `POST /api/parcel-assignments`               | —                                     | `AssignParcelRequestDto`        | `ParcelAssignmentResponseDto` (201)                                    | Admin, Dispatcher                                         |
+| Assignments    | `PUT /api/parcel-assignments/{id}/reassign`  | `id: long`                            | `ReassignParcelRequestDto`      | `ParcelAssignmentResponseDto`                                          | Admin, Dispatcher                                         |
+| Assignments    | `PUT /api/parcel-assignments/{id}/unassign`  | `id: long`                            | —                               | `string`                                                               | Admin, Dispatcher                                         |
 | Tracking       | `GET /api/parcel-tracking`                   | `page`, `pageSize`                    | —                               | `PagedResponseDto<ParcelTrackingResponseDto>`                          | Authenticated                                             |
-| Tracking       | `GET /api/parcel-tracking/{trackingNumber}`  | `trackingNumber: string`              | —                               | `ParcelTrackingResponseDto[]`                                          | Authenticated                                             |
-| Tracking       | `POST /api/parcel-tracking`                  | —                                     | `CreateStatusEventRequestDto`   | `ParcelTrackingResponseDto`                                            | Authenticated                                             |
-| Tracking       | `PUT /api/parcel-tracking/{parcelId}/status` | `parcelId: long`                      | `UpdateParcelStatusRequestDto`  | `ParcelTrackingResponseDto`                                            | Authenticated                                             |
+| Tracking       | `GET /api/parcel-tracking/{trackingNumber}`  | `trackingNumber: string`              | —                               | `ParcelTrackingResponseDto[]`; empty for an accessible parcel with no events | Authenticated; Courier scope enforced server-side          |
+| Tracking       | `POST /api/parcel-tracking`                  | —                                     | `CreateStatusEventRequestDto`   | `ParcelTrackingResponseDto`                                            | Admin, Booking Agent, Dispatcher                           |
+| Tracking       | `PUT /api/parcel-tracking/{parcelId}/status` | `parcelId: long`                      | `UpdateParcelStatusRequestDto`  | `ParcelTrackingResponseDto`                                            | Admin, Booking Agent, Dispatcher; terminal guard           |
+| Tracking       | `PUT /api/parcel-tracking/{parcelId}/courier-transition` | `parcelId: long` | `UpdateCourierParcelStatusRequestDto` | `ParcelTrackingResponseDto`                                  | Courier; verifies active profile and assignment            |
 | Routes         | `GET /api/Route`                             | `page`, `pageSize`, optional `search` | —                               | `PagedResponseDto<RouteResponseDto>`                                   | Authenticated                                             |
 | Routes         | `GET /api/Route/{id}`                        | `id: int`                             | —                               | `RouteResponseDto`; 404 when absent                                    | Authenticated                                             |
 | Routes         | `POST /api/Route`                            | —                                     | `CreateRouteRequestDto`         | `RouteResponseDto` (201)                                               | Authenticated                                             |
@@ -79,15 +79,17 @@ authentication middleware may return ProblemDetails or an empty 401 instead.
 | Routes         | `DELETE /api/Route/{id}`                     | `id: int`                             | —                               | `bool`                                                                 | Authenticated; soft delete                                |
 | Dashboard      | `GET /api/dashboard/admin`                   | —                                     | —                               | `AdminDashboardResponseDto`                                            | Authenticated                                             |
 | Dashboard      | `GET /api/dashboard/dispatcher`              | —                                     | —                               | `DispatcherDashboardResponseDto`                                       | Authenticated                                             |
-| Dashboard      | `GET /api/dashboard/courier`                 | —                                     | —                               | `CourierDashboardResponseDto`                                          | Authenticated                                             |
+| Dashboard      | `GET /api/dashboard/courier`                 | —                                     | —                               | `CourierDashboardResponseDto`                                          | Courier role                                              |
 | Reports        | `GET /api/reports/parcel-bookings`           | optional `fromDate`, `toDate`         | —                               | `ParcelBookingReportDto[]`                                             | Authenticated                                             |
 | Reports        | `GET /api/reports/parcel-status`             | optional `fromDate`, `toDate`         | —                               | `ParcelStatusReportDto[]`                                              | Authenticated                                             |
 | Reports        | `GET /api/reports/courier-performance`       | optional `fromDate`, `toDate`         | —                               | `CourierPerformanceReportDto[]`                                        | Authenticated                                             |
 
-The authentication staff-role and staff-registration endpoints, and all Courier
-management endpoints, enforce Admin authorization at the controller/action level.
-Other `[Authorize]` controllers accept any authenticated user; role-based
-restrictions should not be inferred on the frontend.
+The authentication staff-role and staff-registration endpoints, and Courier
+profile management endpoints, enforce Admin authorization at the
+controller/action level. Courier dispatch options are Dispatcher-only, the
+Courier dashboard and Courier transition endpoint require the Courier role,
+and assignment mutations are Admin/Dispatcher-only. Courier tracking reads are
+restricted server-side to the authenticated Courier's assigned parcel history.
 
 ## Admin UI scope and backend gaps
 
@@ -96,7 +98,8 @@ restrictions should not be inferred on the frontend.
 | Dashboard       | `GET /api/dashboard/admin`, `GET /api/reports/courier-performance`, `GET /api/users`                         | Dashboard metrics, status summary, recent bookings, courier performance, and booking-agent/dispatcher totals derived from user role names |
 | Users           | `GET /api/users`, `GET /api/users/{id}`, `GET /api/Auth/staff-roles`, `POST /api/Auth/register-staff`        | View/search/details; create login accounts using active backend staff roles; Courier registration also creates its linked profile         |
 | Customers       | `GET/POST/PUT/DELETE /api/customers`                                                                         | List, create, update, and soft-delete                                                                                                     |
-| Couriers        | `GET /api/couriers/eligible-users`, `GET/POST/PUT/DELETE /api/couriers`                                       | Admin-only profile management; Add Courier links an existing eligible Courier login without creating another account                        |
+| Couriers        | `GET/PUT/DELETE /api/couriers`                                                                               | Admin-only profile listing, viewing, updating, and soft deletion; new accounts and profiles are created through User Management               |
+| Courier dispatch | `GET /api/couriers/dispatch-options`                                                                         | Dispatcher-only list of active, available, linked Courier accounts with no active assignment; the assignment service revalidates the selected Courier |
 | Hubs            | `GET/POST/PUT/DELETE /api/hubs`                                                                              | Paginated/searchable list, create, update, and soft-delete                                                                                |
 | Parcels         | `GET /api/parcels`, `GET /api/parcels/{id}`, `POST /api/parcels`                                             | View, search, and create; no update or delete endpoint exists                                                                             |
 | Parcel statuses | `GET/POST/PUT/DELETE /api/ParcelStatus`                                                                      | Paginated/searchable list, create, update, and soft-delete                                                                                |
@@ -122,29 +125,44 @@ the existing soft-delete endpoint.
 
 Frontend routes for Admin screens are restricted by the Admin role from
 AuthContext. Courier management and staff role/registration endpoints also
-enforce `[Authorize(Roles = "Admin")]` on the backend. Other management,
-dashboard, and report controllers still use `[Authorize]` without an Admin role
-policy.
+enforce `[Authorize(Roles = "Admin")]` on the backend. Assignment mutations
+require Admin or Dispatcher, and tracking writes require Admin, Booking Agent,
+or Dispatcher; most other management, dashboard, and report actions still use
+`[Authorize]` without an Admin role policy.
 
 JWT bearer validation checks the configured issuer, audience, signing key, and
 expiration. The backend uses the role claim for authorization, and the token
 contains role names derived from the user's active roles.
 
-## Courier UI scope and backend gaps
+## Phase 9 Courier workflow and API mapping
 
-| Courier screen | API and data source | Supported behavior |
-| -------------- | ------------------- | ------------------ |
-| Dashboard and assigned parcels | `GET /api/dashboard/courier` | The repository selects the active courier profile linked to the authenticated user ID, then returns that courier's active assignments and the supported totals. |
-| Parcel details | `CourierAssignedParcelDto` from the courier dashboard response | Display only fields returned by the courier-scoped dashboard response; there is no courier-scoped parcel-details endpoint. |
-| Tracking history | `GET /api/parcel-tracking/{trackingNumber}` after matching a parcel against the courier dashboard response | Read-only history. The tracking controller is `[Authorize]` but does not check assignment ownership, so the UI only requests history for a parcel in the authenticated courier's dashboard response. |
-| Pickup and status updates | `PUT /api/parcel-tracking/{parcelId}/status` | Not used for courier actions: the controller has no Courier role/assignment check, and the service accepts any active status without validating transitions or assignment ownership. |
-| Delivery attempts and delivery proof | No matching controller, request DTO, or operation was found | Not supported by the current backend. |
-| Delivery history | No courier-scoped history endpoint | The dashboard only returns current active assignments; it cannot represent all past courier deliveries. |
+| Workflow step | API / data source | Verified behavior and constraints |
+| ------------- | ----------------- | --------------------------------- |
+| Courier dashboard and assigned parcels | `GET /api/dashboard/courier` | Courier-role only; uses JWT `NameIdentifier` to find the active, non-deleted Courier profile and returns only its assignments and recorded successful deliveries. |
+| Parcel details | `CourierAssignedParcelDto` from the dashboard | Includes parcel and assignment dates, weight, sender/recipient contact and address fields (including recipient email), route/hub names, and status; no separate parcel-details endpoint is required. |
+| Tracking history | `GET /api/parcel-tracking/{trackingNumber}` | Courier reads are server-side filtered to active assignments or parcels successfully delivered by that authenticated Courier; inaccessible or unknown parcels return 404. |
+| Courier status changes | `PUT /api/parcel-tracking/{parcelId}/courier-transition` | Accepts `statusCode` and optional `notes`; resolves the active status row by code, verifies the active Courier profile and assignment, validates the matrix below, and atomically updates the parcel plus its tracking event. |
+| Failed-attempt review | Tracking events with `DELIVERY_ATTEMPTED` | Uses existing `StatusEvent.Notes`, `EventAt`, `CourierId`, and `CreatedBy` fields. The Dispatcher Tracking page displays the attempt; no delivery-attempt table or schema change is used. |
+| Dispatcher retry/reassignment | `PUT /api/parcel-assignments/{id}/reassign` (or existing unassign then assign workflow) | Mutations are restricted to Admin/Dispatcher. Courier may start a subsequent attempt only when its active assignment was created after the latest failed-attempt event. |
+| Successful delivery | Courier transition to `DELIVERED` | Sets existing `Parcel.DeliveredAt`, writes the status event, ends the active assignment, and marks the Courier available. `DELIVERED` remains `IsTerminal = false` in the database but is treated as final by application validation. |
+| Delivery history | `CourierDashboardResponseDto.DeliveryHistory` | Derived from this Courier's parcel assignments with `DeliveredAt` set. Failed attempts remain visible in parcel tracking history, not in the successful-delivery list. |
 
-The generic parcel, assignment, and status-update APIs are authenticated-only,
-not Courier-specific. They must not be used by Courier screens to fetch other
-couriers' assignments or modify parcel state. No backend or database changes
-are included in the Courier frontend phase.
+### Approved Courier status transition matrix
+
+| Current status | Next status | Actor | Required validation |
+| -------------- | ------------ | ----- | ------------------- |
+| `BOOKED` | `PICKED_UP` | Assigned Courier | Active parcel, profile, and assignment |
+| `PICKED_UP` | `IN_TRANSIT` | Assigned Courier | Active parcel, profile, and assignment |
+| `AT_DESTINATION_HUB` | `OUT_FOR_DELIVERY` | Assigned Courier | Destination-hub status must already have been recorded by the existing hub/Dispatcher workflow |
+| `DELIVERY_ATTEMPTED` | `OUT_FOR_DELIVERY` | Assigned Courier | Dispatcher/Admin must create or reassign an active assignment after the latest failed-attempt event; assignments created within the event's stored second are timestamped one second later |
+| `OUT_FOR_DELIVERY` | `DELIVERED` | Assigned Courier | Active assignment; records `DeliveredAt` and releases the Courier |
+| `OUT_FOR_DELIVERY` | `DELIVERY_ATTEMPTED` | Assigned Courier | Active assignment; optional remarks are stored in the existing tracking event `Notes` |
+
+Courier cannot set `AT_ORIGIN_HUB`, `AT_DESTINATION_HUB`, `ON_HOLD`,
+`RETURNED`, or `CANCELLED`. The existing generic status endpoint remains
+available to Admin, Booking Agent, and Dispatcher, but delivered/terminal
+parcels are rejected by application logic. No status IDs or database statuses
+are hardcoded or changed.
 
 ## Request DTO fields
 
@@ -158,7 +176,6 @@ remain defined by each backend DTO/service.
 | `BootstrapAdminRequestDto`              | `bootstrapKey`, `userName`, `email`, `password`, `fullName`, `phone?`                                                                                                                                                                                           |
 | `RegisterStaffRequestDto`               | `userName`, `email`, `password`, `fullName`, `phone?`, `roleId`                                                                                                                                                                                                 |
 | `RegisterCustomerRequestDto`            | `userName`, `email`, `password`, `fullName`, `phone`, `addressLine?`, `city?`, `province?`, `postalCode?`                                                                                                                                                       |
-| `CreateCourierRequestDto`               | `userId?`, `fullName`, `phone`, `email?`, `vehicleType?`, `vehicleNumber?`                                                                                                                                                                                      |
 | `UpdateCourierRequestDto`               | Create fields plus `isAvailable`, `isActive`                                                                                                                                                                                                                    |
 | `CreateCustomerRequestDto`              | `fullName`, `email?`, `phone`, `addressLine?`, `city?`, `province?`, `postalCode?`                                                                                                                                                                              |
 | `UpdateCustomerRequestDto`              | Create fields plus `isActive`                                                                                                                                                                                                                                   |
@@ -172,6 +189,7 @@ remain defined by each backend DTO/service.
 | `ReassignParcelRequestDto`              | `newCourierId`, `assignmentNotes?`                                                                                                                                                                                                                              |
 | `CreateStatusEventRequestDto`           | `parcelId`, `parcelStatusId`, `hubId?`, `courierId?`, `notes?`                                                                                                                                                                                                  |
 | Tracking `UpdateParcelStatusRequestDto` | `parcelStatusId`, `hubId?`, `courierId?`, `notes?`                                                                                                                                                                                                              |
+| `UpdateCourierParcelStatusRequestDto`   | `statusCode`, `notes?` (maximum 500 characters)                                                                                                                                                                                                                 |
 | `CreateRouteRequestDto`                 | `routeName`, `originHubId`, `destinationHubId`, `distanceKm?`, `estimatedHours?`, `description?`                                                                                                                                                                |
 | `UpdateRouteRequestDto`                 | Create fields plus `isActive`                                                                                                                                                                                                                                   |
 | `PaginationRequestDto`                  | `page` (default 1, range 1–2147483647), `pageSize` (default 10, range 1–100)                                                                                                                                                                                    |
@@ -187,7 +205,7 @@ Important response DTO shapes include:
 - `DispatcherDashboardResponseDto`: parcel/assignment/courier totals, recent
   assignments, and recent unassigned parcels.
 - `CourierDashboardResponseDto`: courier identity, assigned/in-transit/
-  delivered totals, and assigned parcels.
+  delivered totals, active assigned parcels, and delivery history.
 - `PagedResponseDto<T>` preserves `items`, `page`, `pageSize`, `totalRecords`,
   and `totalPages` without flattening the page metadata.
 
@@ -201,6 +219,10 @@ Important response DTO shapes include:
 - Parcel assignment history is paged without a soft-delete filter; the `active`
   endpoint means `UnassignedAt == null`.
 - Tracking history and paged tracking results exclude inactive/deleted parcels.
+- New bookings create an initial `BOOKED` tracking event in the same transaction
+  as the parcel and recipient. Existing bookings with no events are not backfilled.
+- Courier tracking reads are additionally scoped to active assignments or
+  deliveries recorded for the authenticated active Courier profile.
 - Reports and dashboards are not paged by these controllers.
 - The backend has no separate generic “booking” controller; the module is
   `ParcelBookingController`.

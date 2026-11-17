@@ -18,9 +18,10 @@ public class ParcelTrackingService : IParcelTrackingService
 
     // Get tracking events with pagination.
     public async Task<PagedResponseDto<ParcelTrackingResponseDto>> GetPagedAsync(
-        PaginationRequestDto request)
+        PaginationRequestDto request,
+        int? courierUserId = null)
     {
-        var result = await _repository.GetPagedAsync(request);
+        var result = await _repository.GetPagedAsync(request, courierUserId);
 
         return new PagedResponseDto<ParcelTrackingResponseDto>
         {
@@ -34,17 +35,24 @@ public class ParcelTrackingService : IParcelTrackingService
 
     // Get complete tracking history using tracking number.
     public async Task<List<ParcelTrackingResponseDto>> GetTrackingHistoryAsync(
-        string trackingNumber)
+        string trackingNumber,
+        int? courierUserId = null)
     {
         if (string.IsNullOrWhiteSpace(trackingNumber))
             throw new ArgumentException("Tracking number is required.");
 
         var events = await _repository.GetTrackingHistoryAsync(
-            trackingNumber.Trim());
+            trackingNumber.Trim(),
+            courierUserId);
 
-        if (events.Count == 0)
+        if (events.Count == 0 &&
+            !await _repository.HasAccessibleParcelForTrackingAsync(
+                trackingNumber.Trim(),
+                courierUserId))
+        {
             throw new KeyNotFoundException(
                 "No tracking history found for this tracking number.");
+        }
 
         return events.Select(MapToResponse).ToList();
     }
@@ -59,6 +67,22 @@ public class ParcelTrackingService : IParcelTrackingService
 
         if (parcel == null)
             throw new KeyNotFoundException("Parcel not found or inactive.");
+
+        if (!parcel.CurrentStatus.IsActive || parcel.CurrentStatus.IsDeleted)
+        {
+            throw new KeyNotFoundException(
+                "The parcel's current status is not active.");
+        }
+
+        if (parcel.DeliveredAt.HasValue ||
+            parcel.CurrentStatus.IsTerminal ||
+            parcel.CurrentStatus.StatusCode.Equals(
+                "DELIVERED",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "A delivered or terminal parcel cannot be updated.");
+        }
 
         var status = await _repository.GetActiveStatusAsync(
             request.ParcelStatusId);
@@ -149,6 +173,131 @@ public class ParcelTrackingService : IParcelTrackingService
         };
 
         return await CreateStatusEventAsync(createRequest, createdBy);
+    }
+
+    public async Task<ParcelTrackingResponseDto> UpdateCourierParcelStatusAsync(
+        long parcelId,
+        UpdateCourierParcelStatusRequestDto request,
+        int userId)
+    {
+        var courier = await _repository.GetActiveCourierForUserAsync(userId);
+        if (courier == null)
+        {
+            throw new KeyNotFoundException(
+                "No active Courier profile was found for the logged-in user.");
+        }
+
+        var parcel = await _repository.GetParcelForUpdateAsync(parcelId);
+        if (parcel == null)
+        {
+            throw new KeyNotFoundException("Parcel not found or inactive.");
+        }
+
+        if (!parcel.CurrentStatus.IsActive || parcel.CurrentStatus.IsDeleted)
+        {
+            throw new KeyNotFoundException(
+                "The parcel's current status is not active.");
+        }
+
+        var assignment = await _repository.GetActiveAssignmentForCourierAsync(
+            parcelId,
+            courier.CourierId);
+        if (assignment == null)
+        {
+            throw new UnauthorizedAccessException(
+                "This parcel is not actively assigned to your Courier profile.");
+        }
+
+        if (parcel.DeliveredAt.HasValue ||
+            parcel.CurrentStatus.IsTerminal ||
+            parcel.CurrentStatus.StatusCode.Equals(
+                "DELIVERED",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "A delivered or terminal parcel cannot be updated.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.StatusCode))
+        {
+            throw new ArgumentException("A Courier status code is required.");
+        }
+        var targetStatusCode = request.StatusCode.Trim().ToUpperInvariant();
+
+        if (targetStatusCode is not (
+            "PICKED_UP" or
+            "IN_TRANSIT" or
+            "OUT_FOR_DELIVERY" or
+            "DELIVERED" or
+            "DELIVERY_ATTEMPTED"))
+        {
+            throw new ArgumentException(
+                "This status is not available as a Courier action.");
+        }
+
+        var targetStatus = await _repository.GetActiveStatusByCodeAsync(
+            targetStatusCode);
+        if (targetStatus == null)
+        {
+            throw new KeyNotFoundException(
+                $"The active {targetStatusCode} parcel status was not found.");
+        }
+
+        var currentStatusCode = parcel.CurrentStatus.StatusCode;
+        var requiresDispatcherReassignment = false;
+        var isAllowed = currentStatusCode.ToUpperInvariant() switch
+        {
+            "BOOKED" => targetStatusCode == "PICKED_UP",
+            "PICKED_UP" => targetStatusCode == "IN_TRANSIT",
+            "AT_DESTINATION_HUB" => targetStatusCode == "OUT_FOR_DELIVERY",
+            "DELIVERY_ATTEMPTED" => targetStatusCode == "OUT_FOR_DELIVERY",
+            "OUT_FOR_DELIVERY" => targetStatusCode is "DELIVERED" or "DELIVERY_ATTEMPTED",
+            _ => false
+        };
+
+        if (currentStatusCode.Equals(
+            "DELIVERY_ATTEMPTED",
+            StringComparison.OrdinalIgnoreCase) &&
+            targetStatusCode == "OUT_FOR_DELIVERY")
+        {
+            requiresDispatcherReassignment = true;
+            var latestAttemptAt = await _repository.GetLatestStatusEventAtAsync(
+                parcelId,
+                "DELIVERY_ATTEMPTED");
+
+            if (!latestAttemptAt.HasValue ||
+                assignment.AssignedAt <= latestAttemptAt.Value)
+            {
+                throw new InvalidOperationException(
+                    "A Dispatcher must assign or reassign this parcel after the failed delivery before another attempt.");
+            }
+        }
+
+        if (!isAllowed)
+        {
+            throw new InvalidOperationException(
+                $"Courier transition from {currentStatusCode} to {targetStatusCode} is not allowed.");
+        }
+
+        var statusEvent = await _repository.TryApplyCourierStatusTransitionAsync(
+            parcelId,
+            parcel.CurrentStatusId,
+            targetStatus.ParcelStatusId,
+            targetStatusCode,
+            assignment.ParcelAssignmentId,
+            courier.CourierId,
+            userId,
+            request.Notes,
+            DateTime.UtcNow,
+            requiresDispatcherReassignment);
+
+        if (statusEvent == null)
+        {
+            throw new InvalidOperationException(
+                "The parcel status or assignment changed. Refresh the parcel and try again.");
+        }
+
+        return MapToResponse(statusEvent);
     }
 
     // Map StatusEvent entity to response DTO.

@@ -30,3 +30,11 @@ export async function updateParcelTrackingStatus(parcelId, request) {
   )
   return getResponseData(response.data)
 }
+
+export async function updateCourierParcelStatus(parcelId, request) {
+  const response = await axiosInstance.put(
+    `${API_PATHS.parcelTracking}/${parcelId}/courier-transition`,
+    request,
+  )
+  return getResponseData(response.data)
+}

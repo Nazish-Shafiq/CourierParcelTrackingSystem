@@ -10,4 +10,5 @@ public class CourierDashboardResponseDto
     public int ParcelsDelivered { get; set; }
 
     public List<CourierAssignedParcelDto> AssignedParcels { get; set; } = new();
+    public List<CourierAssignedParcelDto> DeliveryHistory { get; set; } = new();
 }

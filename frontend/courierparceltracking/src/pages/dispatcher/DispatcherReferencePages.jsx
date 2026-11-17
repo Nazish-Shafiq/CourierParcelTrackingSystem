@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -25,7 +25,6 @@ function formatDate(value) {
 }
 
 function getCourierAvailability(courier) {
-  if (!courier.isActive) return 'Inactive'
   if (courier.hasActiveAssignment) return 'Busy'
   return courier.isAvailable ? 'Available' : 'Unavailable'
 }
@@ -50,10 +49,7 @@ function DispatcherCouriersPage() {
       const searchable = [
         courier.employeeCode,
         courier.fullName,
-        courier.phone,
-        courier.email,
         courier.vehicleType,
-        courier.vehicleNumber,
       ].filter(Boolean).join(' ').toLowerCase()
 
       return matchesAvailability && (!query || searchable.includes(query))
@@ -67,7 +63,7 @@ function DispatcherCouriersPage() {
     <div className="role-dashboard role-dashboard--dispatcher">
       <PageHeader
         actions={<RefreshButton isLoading={couriers.isLoading} onRefresh={couriers.refresh} />}
-        description="Review courier profiles and current assignment availability."
+        description="Review active couriers and their current assignment availability."
         eyebrow="Dispatch resources"
         title="Couriers"
       />
@@ -84,7 +80,7 @@ function DispatcherCouriersPage() {
                 setSearch(value)
                 setCurrentPage(1)
               }}
-              placeholder="Name, employee code, phone, or vehicle"
+              placeholder="Name, employee code, or vehicle type"
               value={search}
             />
             <label className="dispatcher-filter-field">
@@ -104,7 +100,6 @@ function DispatcherCouriersPage() {
                 <option value="available">Available</option>
                 <option value="busy">Busy</option>
                 <option value="unavailable">Unavailable</option>
-                <option value="inactive">Inactive</option>
               </select>
             </label>
           </div>
@@ -114,17 +109,11 @@ function DispatcherCouriersPage() {
               columns={[
                 { key: 'employeeCode', header: 'Employee code' },
                 { key: 'fullName', header: 'Name' },
-                { key: 'phone', header: 'Phone' },
                 { key: 'vehicleType', header: 'Vehicle', render: (row) => row.vehicleType || '—' },
                 {
                   key: 'availability',
                   header: 'Availability',
                   render: (row) => <StatusBadge status={getCourierAvailability(row)} />,
-                },
-                {
-                  key: 'isActive',
-                  header: 'Account',
-                  render: (row) => row.isActive ? 'Active' : 'Inactive',
                 },
               ]}
               emptyState={(
@@ -292,6 +281,12 @@ function DispatcherTrackingPage() {
           description="No tracking events were returned for this tracking number."
           title="No tracking history"
         />
+      )}
+      {history?.some((event) => event.statusCode?.toUpperCase() === 'DELIVERY_ATTEMPTED') && (
+        <p className="dispatcher-failed-attempt" role="status">
+          This parcel has a recorded unsuccessful delivery attempt. Review or reassign its active assignment in{' '}
+          <Link to="/dispatch/assignments">Parcel Assignments</Link>.
+        </p>
       )}
       {history?.length > 0 && (
         <section className="dispatcher-list-card">

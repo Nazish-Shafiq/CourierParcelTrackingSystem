@@ -123,7 +123,15 @@ public class ParcelBookingService : IParcelBookingService
             IsDeleted = false
         };
 
-        // Save parcel and recipient together.
+        parcel.StatusEvents.Add(new StatusEvent
+        {
+            ParcelStatusId = bookedStatus.ParcelStatusId,
+            EventAt = now,
+            CreatedAt = now,
+            CreatedBy = createdBy
+        });
+
+        // Save the parcel, recipient, and initial tracking event together.
         await _repository.AddBookingAsync(parcel, recipient);
 
         // Reload the saved booking with its navigation properties.

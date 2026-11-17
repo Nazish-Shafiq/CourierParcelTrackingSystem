@@ -45,6 +45,7 @@ public class DashboardController : ControllerBase
 
     // GET: api/dashboard/courier
     [HttpGet("courier")]
+    [Authorize(Roles = "Courier")]
     public async Task<ActionResult<ApiResponse<CourierDashboardResponseDto>>> GetCourierDashboard()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);

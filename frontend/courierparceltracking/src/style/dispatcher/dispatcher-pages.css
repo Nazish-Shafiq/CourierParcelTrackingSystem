@@ -94,6 +94,22 @@
   background: #fef3f2;
 }
 
+.dispatcher-failed-attempt {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #fedf89;
+  border-radius: 0.65rem;
+  color: #93370d;
+  background: #fffaeb;
+  font-size: 0.875rem;
+}
+
+.dispatcher-failed-attempt a {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+}
+
 .dispatcher-dialog-backdrop {
   position: fixed;
   z-index: 1000;

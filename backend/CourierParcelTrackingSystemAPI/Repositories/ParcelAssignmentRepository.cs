@@ -49,6 +49,7 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
     {
         return await _context.ParcelAssignments
             .Include(a => a.Parcel)
+            .ThenInclude(p => p.CurrentStatus)
             .Include(a => a.Courier)
             .Include(a => a.AssignedByNavigation)
             .Include(a => a.UnassignedByNavigation)
@@ -72,6 +73,7 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
     public async Task<Parcel?> GetParcelForAssignmentAsync(long parcelId)
     {
         return await _context.Parcels
+            .Include(p => p.CurrentStatus)
             .FirstOrDefaultAsync(p =>
                 p.ParcelId == parcelId &&
                 p.IsActive &&
@@ -85,7 +87,15 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
             .FirstOrDefaultAsync(c =>
                 c.CourierId == courierId &&
                 c.IsActive &&
-                !c.IsDeleted);
+                !c.IsDeleted &&
+                c.UserId.HasValue &&
+                c.User != null &&
+                c.User.IsActive &&
+                !c.User.IsDeleted &&
+                c.User.UserRoleUsers.Any(userRole =>
+                    userRole.Role.RoleName == "Courier" &&
+                    userRole.Role.IsActive &&
+                    !userRole.Role.IsDeleted));
     }
 
     // Check whether the parcel already has an active assignment.
@@ -104,6 +114,18 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
             .AnyAsync(a =>
                 a.CourierId == courierId &&
                 a.UnassignedAt == null);
+    }
+
+    public async Task<DateTime?> GetLatestDeliveryAttemptAtAsync(long parcelId)
+    {
+        return await _context.StatusEvents
+            .Where(e =>
+                e.ParcelId == parcelId &&
+                e.ParcelStatus.StatusCode == "DELIVERY_ATTEMPTED")
+            .OrderByDescending(e => e.EventAt)
+            .ThenByDescending(e => e.StatusEventId)
+            .Select(e => (DateTime?)e.EventAt)
+            .FirstOrDefaultAsync();
     }
 
     // Add a new assignment record.

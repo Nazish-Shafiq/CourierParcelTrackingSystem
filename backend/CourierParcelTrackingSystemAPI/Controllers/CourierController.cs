@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize]
 [ApiController]
 [Route("api/couriers")]
 public class CourierController : ControllerBase
@@ -22,6 +22,7 @@ public class CourierController : ControllerBase
 
     // Get all couriers with pagination and optional search.
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<PagedResponseDto<CourierResponseDto>>),
         StatusCodes.Status200OK)]
@@ -39,21 +40,27 @@ public class CourierController : ControllerBase
         );
     }
 
-    [HttpGet("eligible-users")]
+    // Get active couriers and dispatch-relevant details for Dispatcher screens.
+    [HttpGet("dispatch-options")]
+    [Authorize(Roles = "Dispatcher")]
     [ProducesResponseType(
-        typeof(ApiResponse<IReadOnlyList<EligibleCourierUserDto>>),
+        typeof(ApiResponse<List<CourierDispatchOptionDto>>),
         StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetEligibleCourierUsers(
-        [FromQuery] int? excludeCourierId)
+    public async Task<IActionResult> GetDispatchOptions()
     {
-        var result = await _service.GetEligibleCourierUsersAsync(excludeCourierId);
-        return Ok(ApiResponse<IReadOnlyList<EligibleCourierUserDto>>.Ok(
-            result,
-            "Eligible Courier login accounts retrieved successfully."));
+        var result = await _service.GetDispatchOptionsAsync();
+
+        return Ok(
+            ApiResponse<List<CourierDispatchOptionDto>>.Ok(
+                result,
+                "Courier dispatch options retrieved successfully."
+            )
+        );
     }
 
     // Get courier by ID.
     [HttpGet("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<CourierResponseDto>),
         StatusCodes.Status200OK)]
@@ -70,36 +77,9 @@ public class CourierController : ControllerBase
                 ApiResponse<CourierResponseDto>.Ok(result));
     }
 
-    // Create a new courier.
-    [HttpPost]
-    [ProducesResponseType(
-        typeof(ApiResponse<CourierResponseDto>),
-        StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Create(
-        [FromBody] CreateCourierRequestDto request)
-    {
-        try
-        {
-            var result = await _service.CreateAsync(request, GetCurrentUserId());
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = result.CourierId },
-                ApiResponse<CourierResponseDto>.Ok(result, "Courier created successfully."));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(ApiResponse<CourierResponseDto>.Fail(ex.Message));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ApiResponse<CourierResponseDto>.Fail(ex.Message));
-        }
-    }
-
     // Update an existing courier.
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<CourierResponseDto>),
         StatusCodes.Status200OK)]
@@ -130,6 +110,7 @@ public class CourierController : ControllerBase
 
     // Soft delete a courier.
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<bool>),
         StatusCodes.Status200OK)]

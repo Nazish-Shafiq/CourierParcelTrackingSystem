@@ -30,6 +30,7 @@ import Login from './pages/auth/Login'
 import CourierDashboard from './pages/courier/CourierDashboard'
 import {
   CourierAssignedParcelsPage,
+  CourierDeliveryHistoryPage,
   CourierParcelDetailsPage,
   CourierParcelTrackingPage,
 } from './pages/courier/CourierParcelPages'
@@ -151,6 +152,7 @@ function AppRoutes() {
           <Route element={<RoleBasedRoute allowedRoles={[ROLE_NAMES.COURIER]} />}>
             <Route path="dashboard/courier" element={<CourierDashboard />} />
             <Route path="courier/assigned-parcels" element={<CourierAssignedParcelsPage />} />
+            <Route path="courier/delivery-history" element={<CourierDeliveryHistoryPage />} />
             <Route path="courier/assigned-parcels/:parcelId" element={<CourierParcelDetailsPage />} />
             <Route path="courier/assigned-parcels/:parcelId/tracking" element={<CourierParcelTrackingPage />} />
           </Route>

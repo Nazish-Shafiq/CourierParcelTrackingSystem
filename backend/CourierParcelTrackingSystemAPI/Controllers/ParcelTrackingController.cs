@@ -29,13 +29,25 @@ public class ParcelTrackingController : ControllerBase
         return int.TryParse(userId, out var id) ? id : null;
     }
 
+    private int? GetCourierUserId() =>
+        User.IsInRole("Courier")
+            ? GetCurrentUserId()
+            : null;
+
     // GET: api/parcel-tracking
     // Get all tracking events with pagination.
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResponseDto<ParcelTrackingResponseDto>>>> GetAll(
         [FromQuery] PaginationRequestDto request)
     {
-        var result = await _service.GetPagedAsync(request);
+        var courierUserId = GetCourierUserId();
+        if (User.IsInRole("Courier") && !courierUserId.HasValue)
+        {
+            return Unauthorized(ApiResponse<PagedResponseDto<ParcelTrackingResponseDto>>.Fail(
+                "Invalid user information in token."));
+        }
+
+        var result = await _service.GetPagedAsync(request, courierUserId);
 
         return Ok(ApiResponse<PagedResponseDto<ParcelTrackingResponseDto>>.Ok(
             result,
@@ -48,7 +60,14 @@ public class ParcelTrackingController : ControllerBase
     public async Task<ActionResult<ApiResponse<List<ParcelTrackingResponseDto>>>> GetTrackingHistory(
         string trackingNumber)
     {
-        var result = await _service.GetTrackingHistoryAsync(trackingNumber);
+        var courierUserId = GetCourierUserId();
+        if (User.IsInRole("Courier") && !courierUserId.HasValue)
+        {
+            return Unauthorized(ApiResponse<List<ParcelTrackingResponseDto>>.Fail(
+                "Invalid user information in token."));
+        }
+
+        var result = await _service.GetTrackingHistoryAsync(trackingNumber, courierUserId);
 
         return Ok(ApiResponse<List<ParcelTrackingResponseDto>>.Ok(
             result,
@@ -58,6 +77,7 @@ public class ParcelTrackingController : ControllerBase
     // POST: api/parcel-tracking
     // Create a new tracking event.
     [HttpPost]
+    [Authorize(Roles = "Admin,Booking Agent,Dispatcher")]
     public async Task<ActionResult<ApiResponse<ParcelTrackingResponseDto>>> CreateStatusEvent(
         [FromBody] CreateStatusEventRequestDto request)
     {
@@ -73,6 +93,7 @@ public class ParcelTrackingController : ControllerBase
     // PUT: api/parcel-tracking/{parcelId}/status
     // Update parcel status and create a tracking event.
     [HttpPut("{parcelId:long}/status")]
+    [Authorize(Roles = "Admin,Booking Agent,Dispatcher")]
     public async Task<ActionResult<ApiResponse<ParcelTrackingResponseDto>>> UpdateParcelStatus(
         long parcelId,
         [FromBody] UpdateParcelStatusRequestDto request)
@@ -85,5 +106,49 @@ public class ParcelTrackingController : ControllerBase
         return Ok(ApiResponse<ParcelTrackingResponseDto>.Ok(
             result,
             "Parcel status updated successfully."));
+    }
+
+    // PUT: api/parcel-tracking/{parcelId}/courier-transition
+    [HttpPut("{parcelId:long}/courier-transition")]
+    [Authorize(Roles = "Courier")]
+    public async Task<ActionResult<ApiResponse<ParcelTrackingResponseDto>>> UpdateCourierParcelStatus(
+        long parcelId,
+        [FromBody] UpdateCourierParcelStatusRequestDto request)
+    {
+        var userId = GetCurrentUserId();
+        if (!userId.HasValue)
+        {
+            return Unauthorized(
+                ApiResponse<ParcelTrackingResponseDto>.Fail(
+                    "Invalid user information in token."));
+        }
+
+        try
+        {
+            var result = await _service.UpdateCourierParcelStatusAsync(
+                parcelId,
+                request,
+                userId.Value);
+
+            return Ok(ApiResponse<ParcelTrackingResponseDto>.Ok(
+                result,
+                "Courier parcel status updated successfully."));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                ApiResponse<ParcelTrackingResponseDto>.Fail(ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(
+                ApiResponse<ParcelTrackingResponseDto>.Fail(ex.Message));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(
+                ApiResponse<ParcelTrackingResponseDto>.Fail(ex.Message));
+        }
     }
 }

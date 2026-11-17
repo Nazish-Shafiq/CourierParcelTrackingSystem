@@ -2,8 +2,6 @@ import StatusBadge from "../../components/common/StatusBadge";
 import {
   getCouriers,
   getCourierById,
-  getEligibleCourierUsers,
-  createCourier,
   updateCourier,
   deleteCourier,
 } from "../../services/courierService";
@@ -52,22 +50,6 @@ function formatDate(value) {
 
 function activeLabel(isActive) {
   return isActive ? "Active" : "Inactive";
-}
-
-async function loadCourierFormOptions(signal, courierId) {
-  const users = await getEligibleCourierUsers(courierId, signal);
-  return {
-    eligibleCourierUsers: users.map((user) => ({
-      value: user.userId,
-      label: `${user.fullName} (${user.userName}) - ${user.email}`,
-      searchText: [user.userName, user.fullName, user.email, user.phone]
-        .filter(Boolean)
-        .join(" "),
-      fullName: user.fullName,
-      phone: user.phone ?? "",
-      email: user.email,
-    })),
-  };
 }
 
 export const usersConfig = {
@@ -188,15 +170,12 @@ export const couriersConfig = {
   key: "couriers",
   title: "Couriers",
   singular: "courier",
-  description:
-    "Add Courier profiles by linking existing Courier login accounts. Create new logins from Users.",
+  description: "Manage Courier profiles and availability.",
   paged: true,
   list: getCouriers,
   getById: getCourierById,
-  create: createCourier,
   update: updateCourier,
   remove: deleteCourier,
-  loadFormOptions: loadCourierFormOptions,
   idField: "courierId",
   getDisplayName: (courier) => courier.fullName || courier.employeeCode,
   columns: [
@@ -217,30 +196,9 @@ export const couriersConfig = {
   ],
   fields: [
     {
-      name: "userId",
-      label: "Courier login account",
-      type: "searchable-select",
-      integer: true,
-      nullable: true,
-      numeric: true,
-      requiredOnCreate: true,
-      optionsKey: "eligibleCourierUsers",
-      searchLabel: "Search Courier login accounts",
-      placeholder: "Select an existing Courier login",
-      emptyPlaceholder: "No eligible Courier accounts",
-      helpText: "Choose an active Courier login account that has no profile.",
-      emptyHelpText: "Create a Courier login account from Users first.",
-      onSelect: (user) => ({
-        fullName: user?.fullName ?? "",
-        phone: user?.phone ?? "",
-        email: user?.email ?? "",
-      }),
-    },
-    {
       name: "fullName",
       label: "Full name",
       required: true,
-      readOnly: true,
       minLength: 2,
       maxLength: 150,
     },
@@ -257,7 +215,6 @@ export const couriersConfig = {
       label: "Email",
       type: "email",
       nullable: true,
-      readOnly: true,
       maxLength: 256,
     },
     {

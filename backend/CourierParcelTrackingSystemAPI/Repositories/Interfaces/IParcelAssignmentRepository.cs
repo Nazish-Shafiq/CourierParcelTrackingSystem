@@ -28,6 +28,9 @@ public interface IParcelAssignmentRepository
     // Check whether a courier already has an active assignment.
     Task<bool> HasActiveAssignmentForCourierAsync(int courierId);
 
+    // Get the latest failed-delivery event time for a parcel.
+    Task<DateTime?> GetLatestDeliveryAttemptAtAsync(long parcelId);
+
     // Add a new assignment.
     Task AddAsync(ParcelAssignment assignment);
 

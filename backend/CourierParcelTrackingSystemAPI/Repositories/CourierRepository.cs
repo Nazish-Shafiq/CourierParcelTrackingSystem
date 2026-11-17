@@ -47,20 +47,23 @@ public class CourierRepository : ICourierRepository
         return await query.ToPagedResponseAsync(pagination);
     }
 
-    public Task<List<User>> GetEligibleCourierUsersAsync(int? excludeCourierId = null) =>
-        _context.Users
+    public Task<List<Courier>> GetActiveCouriersForDispatchAsync() =>
+        _context.Couriers
             .AsNoTracking()
-            .Where(user =>
-                user.IsActive && !user.IsDeleted &&
-                user.UserRoleUsers.Any(userRole =>
+            .Where(c =>
+                c.IsActive &&
+                !c.IsDeleted &&
+                c.IsAvailable &&
+                c.UserId.HasValue &&
+                c.User != null &&
+                c.User.IsActive &&
+                !c.User.IsDeleted &&
+                c.User.UserRoleUsers.Any(userRole =>
                     userRole.Role.RoleName == "Courier" &&
-                    userRole.Role.IsActive && !userRole.Role.IsDeleted) &&
-                !_context.Couriers.Any(courier =>
-                    courier.UserId == user.UserId &&
-                    (!excludeCourierId.HasValue ||
-                     courier.CourierId != excludeCourierId.Value)))
-            .OrderBy(user => user.FullName)
-            .ThenBy(user => user.UserName)
+                    userRole.Role.IsActive &&
+                    !userRole.Role.IsDeleted) &&
+                !c.ParcelAssignments.Any(a => a.UnassignedAt == null))
+            .OrderBy(c => c.CourierId)
             .ToListAsync();
 
     // Get courier by ID.
@@ -116,13 +119,6 @@ public class CourierRepository : ICourierRepository
             query = query.Where(courier => courier.CourierId != excludeCourierId.Value);
 
         return query.AnyAsync();
-    }
-
-    // Add a new courier.
-    public async Task AddAsync(Courier courier)
-    {
-        await _context.Couriers.AddAsync(courier);
-        await _context.SaveChangesAsync();
     }
 
     // Update an existing courier.

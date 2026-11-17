@@ -1,22 +1,12 @@
 import { getActiveParcelAssignments } from './parcelAssignmentService'
 import { getParcels } from './parcelService'
-import { getCouriers } from './courierService'
+import { getDispatchCourierOptions } from './courierService'
 
 async function getAllCouriers(signal) {
-  const firstPage = await getCouriers({ page: 1, pageSize: 100, signal })
-  if (!firstPage || !Array.isArray(firstPage.items) || !Number.isInteger(firstPage.totalPages)) {
-    throw new Error('The courier response did not contain valid pagination data.')
+  const couriers = await getDispatchCourierOptions(signal)
+  if (!Array.isArray(couriers)) {
+    throw new Error('The courier dispatch options response was invalid.')
   }
-
-  const couriers = [...firstPage.items]
-  for (let page = 2; page <= firstPage.totalPages; page += 1) {
-    const result = await getCouriers({ page, pageSize: 100, signal })
-    if (!result || !Array.isArray(result.items)) {
-      throw new Error(`The courier response for page ${page} was invalid.`)
-    }
-    couriers.push(...result.items)
-  }
-
   return couriers
 }
 
@@ -38,8 +28,7 @@ function getAvailableCouriers(couriers, assignments) {
   )
 
   return couriers.filter((courier) => (
-    courier.isActive
-    && courier.isAvailable
+    courier.isAvailable
     && !assignedCourierIds.has(courier.courierId)
   ))
 }

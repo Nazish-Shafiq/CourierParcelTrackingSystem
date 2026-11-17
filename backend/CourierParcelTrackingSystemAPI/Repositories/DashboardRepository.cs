@@ -198,7 +198,10 @@ public class DashboardRepository : IDashboardRepository
             .Where(c =>
                 c.UserId == userId &&
                 c.IsActive &&
-                !c.IsDeleted)
+                !c.IsDeleted &&
+                c.User != null &&
+                c.User.IsActive &&
+                !c.User.IsDeleted)
             .Select(c => new CourierDashboardResponseDto
             {
                 CourierName = c.FullName,
@@ -215,11 +218,17 @@ public class DashboardRepository : IDashboardRepository
                     !a.Parcel.IsDeleted &&
                     a.Parcel.CurrentStatus.StatusCode == "IN_TRANSIT"),
 
-                ParcelsDelivered = c.ParcelAssignments.Count(a =>
-                    a.UnassignedAt == null &&
-                    a.Parcel.IsActive &&
-                    !a.Parcel.IsDeleted &&
-                    a.Parcel.CurrentStatus.StatusCode == "DELIVERED"),
+                ParcelsDelivered = c.ParcelAssignments
+                    .Where(a =>
+                        a.Parcel.IsActive &&
+                        !a.Parcel.IsDeleted &&
+                        a.Parcel.DeliveredAt.HasValue &&
+                        a.Parcel.StatusEvents.Any(e =>
+                            e.ParcelStatus.StatusCode == "DELIVERED" &&
+                            e.CourierId == c.CourierId))
+                    .Select(a => a.ParcelId)
+                    .Distinct()
+                    .Count(),
 
                 AssignedParcels = c.ParcelAssignments
                     .Where(a =>
@@ -232,18 +241,108 @@ public class DashboardRepository : IDashboardRepository
                         ParcelAssignmentId = a.ParcelAssignmentId,
                         ParcelId = a.ParcelId,
                         TrackingNumber = a.Parcel.TrackingNumber,
-
                         SenderName = a.Parcel.SenderCustomer.FullName,
-
+                        SenderPhone = a.Parcel.SenderCustomer.Phone,
+                        SenderAddressLine = a.Parcel.SenderCustomer.AddressLine,
+                        SenderCity = a.Parcel.SenderCustomer.City,
+                        SenderProvince = a.Parcel.SenderCustomer.Province,
+                        SenderPostalCode = a.Parcel.SenderCustomer.PostalCode,
                         RecipientName = a.Parcel.ParcelRecipient != null
                             ? a.Parcel.ParcelRecipient.RecipientName
                             : string.Empty,
-
+                        RecipientPhone = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.Phone
+                            : null,
+                        RecipientEmail = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.Email
+                            : null,
+                        RecipientAddressLine = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.AddressLine
+                            : null,
                         RecipientCity = a.Parcel.ParcelRecipient != null
                             ? a.Parcel.ParcelRecipient.City
                             : string.Empty,
-
+                        RecipientProvince = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.Province
+                            : null,
+                        RecipientPostalCode = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.PostalCode
+                            : null,
+                        TotalWeightKg = a.Parcel.TotalWeightKg,
+                        BookingDate = a.Parcel.BookingDate,
+                        ExpectedDeliveryDate = a.Parcel.ExpectedDeliveryDate,
+                        DeliveredAt = a.Parcel.DeliveredAt,
+                        SpecialInstructions = a.Parcel.SpecialInstructions,
+                        RouteName = a.Parcel.Route != null ? a.Parcel.Route.RouteName : null,
+                        OriginHubName = a.Parcel.Route != null
+                            ? a.Parcel.Route.OriginHub.HubName
+                            : null,
+                        DestinationHubName = a.Parcel.Route != null
+                            ? a.Parcel.Route.DestinationHub.HubName
+                            : null,
+                        AssignmentNotes = a.AssignmentNotes,
                         CurrentStatus = a.Parcel.CurrentStatus.StatusName,
+                        CurrentStatusCode = a.Parcel.CurrentStatus.StatusCode,
+                        AssignedAt = a.AssignedAt
+                    })
+                    .ToList(),
+
+                DeliveryHistory = c.ParcelAssignments
+                    .Where(a =>
+                        a.Parcel.IsActive &&
+                        !a.Parcel.IsDeleted &&
+                        a.Parcel.DeliveredAt.HasValue &&
+                        a.Parcel.StatusEvents.Any(e =>
+                            e.ParcelStatus.StatusCode == "DELIVERED" &&
+                            e.CourierId == c.CourierId))
+                    .OrderByDescending(a => a.Parcel.DeliveredAt)
+                    .Select(a => new CourierAssignedParcelDto
+                    {
+                        ParcelAssignmentId = a.ParcelAssignmentId,
+                        ParcelId = a.ParcelId,
+                        TrackingNumber = a.Parcel.TrackingNumber,
+                        SenderName = a.Parcel.SenderCustomer.FullName,
+                        SenderPhone = a.Parcel.SenderCustomer.Phone,
+                        SenderAddressLine = a.Parcel.SenderCustomer.AddressLine,
+                        SenderCity = a.Parcel.SenderCustomer.City,
+                        SenderProvince = a.Parcel.SenderCustomer.Province,
+                        SenderPostalCode = a.Parcel.SenderCustomer.PostalCode,
+                        RecipientName = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.RecipientName
+                            : string.Empty,
+                        RecipientPhone = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.Phone
+                            : null,
+                        RecipientEmail = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.Email
+                            : null,
+                        RecipientAddressLine = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.AddressLine
+                            : null,
+                        RecipientCity = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.City
+                            : string.Empty,
+                        RecipientProvince = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.Province
+                            : null,
+                        RecipientPostalCode = a.Parcel.ParcelRecipient != null
+                            ? a.Parcel.ParcelRecipient.PostalCode
+                            : null,
+                        TotalWeightKg = a.Parcel.TotalWeightKg,
+                        BookingDate = a.Parcel.BookingDate,
+                        ExpectedDeliveryDate = a.Parcel.ExpectedDeliveryDate,
+                        DeliveredAt = a.Parcel.DeliveredAt,
+                        SpecialInstructions = a.Parcel.SpecialInstructions,
+                        RouteName = a.Parcel.Route != null ? a.Parcel.Route.RouteName : null,
+                        OriginHubName = a.Parcel.Route != null
+                            ? a.Parcel.Route.OriginHub.HubName
+                            : null,
+                        DestinationHubName = a.Parcel.Route != null
+                            ? a.Parcel.Route.DestinationHub.HubName
+                            : null,
+                        AssignmentNotes = a.AssignmentNotes,
+                        CurrentStatus = a.Parcel.CurrentStatus.StatusName,
+                        CurrentStatusCode = a.Parcel.CurrentStatus.StatusCode,
                         AssignedAt = a.AssignedAt
                     })
                     .ToList()

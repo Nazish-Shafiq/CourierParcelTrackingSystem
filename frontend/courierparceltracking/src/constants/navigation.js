@@ -97,6 +97,7 @@ export const ROLE_NAVIGATION = {
   ],
   [ROLE_NAMES.COURIER]: [
     { label: "My Assigned Parcels", path: "/courier/assigned-parcels", icon: Boxes },
+    { label: "Delivery History", path: "/courier/delivery-history", icon: Clock3 },
   ],
   [ROLE_NAMES.CUSTOMER_VIEWER]: [
     { label: "My Parcels", path: "/customer/parcels", icon: Package },
@@ -161,6 +162,9 @@ export function getNavigationItem(pathname) {
   }
   if (pathname.startsWith("/courier/assigned-parcels/")) {
     return NAVIGATION_ITEMS.find((item) => item.path === "/courier/assigned-parcels");
+  }
+  if (pathname.startsWith("/courier/delivery-history/")) {
+    return NAVIGATION_ITEMS.find((item) => item.path === "/courier/delivery-history");
   }
   return NAVIGATION_ITEMS.find((item) => item.path === pathname);
 }

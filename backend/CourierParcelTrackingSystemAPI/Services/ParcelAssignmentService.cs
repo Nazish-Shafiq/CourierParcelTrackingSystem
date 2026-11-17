@@ -29,6 +29,8 @@ public class ParcelAssignmentService : IParcelAssignmentService
             throw new KeyNotFoundException(
                 "Parcel not found or inactive.");
 
+        EnsureParcelCanBeAssigned(parcel);
+
         if (await _repository.HasActiveAssignmentAsync(request.ParcelId))
             throw new InvalidOperationException(
                 "This parcel already has an active assignment.");
@@ -55,7 +57,9 @@ public class ParcelAssignmentService : IParcelAssignmentService
         {
             ParcelId = parcel.ParcelId,
             CourierId = courier.CourierId,
-            AssignedAt = DateTime.UtcNow,
+            AssignedAt = await GetAssignmentTimeAsync(
+                parcel.ParcelId,
+                parcel.CurrentStatus.StatusCode),
             AssignedBy = assignedBy,
             AssignmentNotes = request.AssignmentNotes,
             Parcel = parcel,
@@ -133,6 +137,8 @@ public class ParcelAssignmentService : IParcelAssignmentService
             throw new InvalidOperationException(
                 "The parcel information could not be loaded.");
 
+        EnsureParcelCanBeAssigned(currentAssignment.Parcel);
+
         var newCourier = await _repository.GetCourierForAssignmentAsync(
             request.NewCourierId);
 
@@ -168,7 +174,9 @@ public class ParcelAssignmentService : IParcelAssignmentService
             Parcel = currentAssignment.Parcel,
             CourierId = newCourier.CourierId,
             Courier = newCourier,
-            AssignedAt = DateTime.UtcNow,
+            AssignedAt = await GetAssignmentTimeAsync(
+                currentAssignment.ParcelId,
+                currentAssignment.Parcel.CurrentStatus.StatusCode),
             AssignedBy = reassignedBy,
             AssignmentNotes = request.AssignmentNotes
         };
@@ -229,5 +237,44 @@ public class ParcelAssignmentService : IParcelAssignmentService
             UnassignedBy = assignment.UnassignedBy,
             AssignmentNotes = assignment.AssignmentNotes
         };
+    }
+
+    private static void EnsureParcelCanBeAssigned(Parcel parcel)
+    {
+        if (parcel.DeliveredAt.HasValue ||
+            parcel.CurrentStatus.IsTerminal ||
+            parcel.CurrentStatus.StatusCode.Equals(
+                "DELIVERED",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "A delivered or terminal parcel cannot be assigned or reassigned.");
+        }
+    }
+
+    private async Task<DateTime> GetAssignmentTimeAsync(
+        long parcelId,
+        string currentStatusCode)
+    {
+        var now = DateTime.UtcNow;
+        if (!currentStatusCode.Equals(
+            "DELIVERY_ATTEMPTED",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return now;
+        }
+
+        var latestAttemptAt = await _repository
+            .GetLatestDeliveryAttemptAtAsync(parcelId);
+        if (!latestAttemptAt.HasValue)
+        {
+            throw new InvalidOperationException(
+                "A delivery attempt event is required before this parcel can be retried.");
+        }
+
+        // Assignment timestamps use second precision, so advance beyond the
+        // stored event time when a reassignment happens within the same second.
+        var afterAttempt = latestAttemptAt.Value.AddSeconds(1);
+        return now > afterAttempt ? now : afterAttempt;
     }
 }

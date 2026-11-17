@@ -75,9 +75,8 @@ function isFieldVisible(field, values, options) {
   return !field.visibleWhen || field.visibleWhen(values, options);
 }
 
-function isFieldRequired(field, values, options, isEditing) {
+function isFieldRequired(field, values, options) {
   return field.required
-    || (field.requiredOnCreate && !isEditing)
     || field.requiredWhen?.(values, options)
     || false;
 }
@@ -117,7 +116,6 @@ function AdminEntityManager({ config }) {
   const [formDataError, setFormDataError] = useState(null);
   const [formOptions, setFormOptions] = useState({});
   const [formValues, setFormValues] = useState({});
-  const [fieldSearch, setFieldSearch] = useState({});
   const [editingRecord, setEditingRecord] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState(null);
@@ -251,7 +249,6 @@ function AdminEntityManager({ config }) {
     formController.current = controller;
     setEditingRecord(record);
     setFormValues(getEmptyValues(config.fields, Boolean(record)));
-    setFieldSearch({});
     setFormOptions({});
     setFormError(null);
     setFormDataError(null);
@@ -264,7 +261,7 @@ function AdminEntityManager({ config }) {
           ? config.getById(record[config.idField], controller.signal)
           : Promise.resolve(record),
         config.loadFormOptions
-          ? config.loadFormOptions(controller.signal, record?.[config.idField])
+          ? config.loadFormOptions(controller.signal)
           : Promise.resolve({}),
       ]);
       if (controller.signal.aborted) return;
@@ -272,25 +269,11 @@ function AdminEntityManager({ config }) {
         throw new Error(`The selected ${config.singular} could not be found.`);
       }
       setEditingRecord(fullRecord);
-      const initialValues = fullRecord
-        ? getRecordValues(fullRecord, config.fields)
-        : getEmptyValues(config.fields);
-      if (fullRecord) {
-        config.fields
-          .filter((field) => field.type === "searchable-select" && field.onSelect)
-          .forEach((field) => {
-            const selectedOption = (options[field.optionsKey] ?? []).find(
-              (option) => String(option.value) === String(initialValues[field.name]),
-            );
-            if (selectedOption) {
-              Object.assign(
-                initialValues,
-                field.onSelect(selectedOption, initialValues, options),
-              );
-            }
-          });
-      }
-      setFormValues(initialValues);
+      setFormValues(
+        fullRecord
+          ? getRecordValues(fullRecord, config.fields)
+          : getEmptyValues(config.fields),
+      );
       setFormOptions(options);
     } catch (error) {
       if (!controller.signal.aborted) setFormDataError(error);
@@ -303,7 +286,6 @@ function AdminEntityManager({ config }) {
     formController.current?.abort();
     setIsFormOpen(false);
     setFormValues({});
-    setFieldSearch({});
     setEditingRecord(null);
     setFormError(null);
     setFormDataError(null);
@@ -340,15 +322,8 @@ function AdminEntityManager({ config }) {
     setIsDetailsLoading(false);
   }
 
-  function handleFieldChange(name, value, field, selectedOption) {
-    setFormValues((current) => {
-      const selectedValues = field?.onSelect?.(
-        selectedOption,
-        current,
-        formOptions,
-      ) ?? {};
-      return { ...current, ...selectedValues, [name]: value };
-    });
+  function handleFieldChange(name, value) {
+    setFormValues((current) => ({ ...current, [name]: value }));
   }
 
   async function handleSubmit(event) {
@@ -409,7 +384,7 @@ function AdminEntityManager({ config }) {
     const id = `${formId}-${field.name}`;
     const value =
       formValues[field.name] ?? (field.type === "checkbox" ? false : "");
-    const required = isFieldRequired(field, formValues, formOptions, Boolean(editingRecord));
+    const required = isFieldRequired(field, formValues, formOptions);
 
     if (field.type === "checkbox") {
       return (
@@ -450,76 +425,6 @@ function AdminEntityManager({ config }) {
       );
     }
 
-    if (field.type === "searchable-select") {
-      const options = field.optionsKey
-        ? (formOptions[field.optionsKey] ?? [])
-        : (field.options ?? []);
-      const searchValue = fieldSearch[field.name] ?? "";
-      const query = searchValue.trim().toLowerCase();
-      const filteredOptions = options.filter((option) =>
-        `${option.label} ${option.searchText ?? ""}`
-          .toLowerCase()
-          .includes(query),
-      );
-      const selectedOption = options.find(
-        (option) => String(option.value) === String(value),
-      );
-      const visibleOptions = selectedOption
-        && !filteredOptions.includes(selectedOption)
-        ? [selectedOption, ...filteredOptions]
-        : filteredOptions;
-
-      return (
-        <div className="admin-searchable-select" key={field.name}>
-          <FormInput
-            disabled={isFormDataLoading || Boolean(formDataError)}
-            id={`${id}-search`}
-            label={field.searchLabel ?? `Search ${field.label}`}
-            onChange={(event) =>
-              setFieldSearch((current) => ({
-                ...current,
-                [field.name]: event.target.value,
-              }))
-            }
-            type="search"
-            value={searchValue}
-          />
-          <FormSelect
-            disabled={
-              isFormDataLoading || (field.optionsKey && Boolean(formDataError))
-            }
-            helpText={
-              options.length === 0 ? field.emptyHelpText : field.helpText
-            }
-            id={id}
-            label={field.label}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              const nextOption = options.find(
-                (option) => String(option.value) === nextValue,
-              );
-              handleFieldChange(
-                field.name,
-                nextValue,
-                field,
-                nextOption,
-              );
-            }}
-            options={visibleOptions}
-            placeholder={
-              options.length === 0
-                ? (field.emptyPlaceholder ?? "No eligible accounts")
-                : filteredOptions.length === 0
-                  ? "No matching accounts"
-                : field.placeholder
-            }
-            required={required}
-            value={value}
-          />
-        </div>
-      );
-    }
-
     const fieldProps = {
       id,
       label: field.label,
@@ -529,7 +434,6 @@ function AdminEntityManager({ config }) {
       minLength: field.minLength,
       onChange: (event) => handleFieldChange(field.name, event.target.value),
       placeholder: field.placeholder,
-      readOnly: field.readOnly,
       required,
       step: field.step,
       type: field.type ?? "text",

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { MapPin, Package, Truck } from 'lucide-react'
+import { Clock3, MapPin, Package, Truck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import DashboardSection from '../../components/common/DashboardSection'
@@ -48,7 +48,13 @@ function CourierDashboard() {
               value={data.totalAssignedParcels}
             />
             <DashboardStatCard icon={Truck} label="Parcels in transit" value={data.parcelsInTransit} accent="amber" />
-            <DashboardStatCard icon={MapPin} label="Parcels delivered" value={data.parcelsDelivered} accent="green" />
+            <DashboardStatCard
+              icon={MapPin}
+              label="Parcels delivered"
+              onClick={() => navigate('/courier/delivery-history')}
+              value={data.parcelsDelivered}
+              accent="green"
+            />
           </div>
 
           <DashboardSection
@@ -76,12 +82,20 @@ function CourierDashboard() {
           </DashboardSection>
 
           <DashboardSection title="Quick action">
-            <Link className="courier-quick-link" to="/courier/assigned-parcels">
-              <span className="courier-quick-link__icon">
-                <Package aria-hidden="true" size={18} />
-              </span>
-              <span>Review my assigned parcels</span>
-            </Link>
+            <div className="courier-quick-links">
+              <Link className="courier-quick-link" to="/courier/assigned-parcels">
+                <span className="courier-quick-link__icon">
+                  <Package aria-hidden="true" size={18} />
+                </span>
+                <span>Review my assigned parcels</span>
+              </Link>
+              <Link className="courier-quick-link" to="/courier/delivery-history">
+                <span className="courier-quick-link__icon">
+                  <Clock3 aria-hidden="true" size={18} />
+                </span>
+                <span>View completed deliveries</span>
+              </Link>
+            </div>
           </DashboardSection>
         </>
       )}

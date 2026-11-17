@@ -70,10 +70,9 @@ The implementation uses the role IDs already present in the database:
 | POST | `/api/auth/register-customer` | Booking Agent |
 | GET | `/api/auth/me` | Authenticated |
 | POST | `/api/auth/logout` | Authenticated |
+| GET | `/api/dashboard/courier` | Courier |
+| GET | `/api/parcel-tracking` and `/api/parcel-tracking/{trackingNumber}` | Authenticated; Courier results are scoped to assigned parcels |
 | GET | `/api/users` and other resource APIs | Authenticated |
-
-Courier management also provides `GET /api/couriers/eligible-users` to Admins
-for selecting an active Courier login that does not yet have a profile.
 
 ## Swagger test sequence
 
@@ -86,12 +85,10 @@ for selecting an active Courier login that does not yet have a profile.
 6. As Admin, call `/api/auth/staff-roles` to retrieve active staff role IDs, then register a Booking Agent,
    Dispatcher, or Courier using the corresponding `roleId`. Courier registration also accepts optional
    `vehicleType` and `vehicleNumber`; its profile is created and linked in the same transaction.
-7. In Courier management, use `/api/couriers/eligible-users` to find an existing Courier login before
-   creating a profile; this operation does not create or change the login password.
-8. Log in as the Booking Agent and use `/api/auth/register-customer`.
-9. Try the staff/customer registration endpoints with the wrong role and verify a `403`.
-10. Call a protected endpoint without a token and verify a `401`.
-11. Test invalid login credentials and verify a `401`.
+7. Log in as the Booking Agent and use `/api/auth/register-customer`.
+8. Try the staff/customer registration endpoints with the wrong role and verify a `403`.
+9. Call a protected endpoint without a token and verify a `401`.
+10. Test invalid login credentials and verify a `401`.
 
 ## Logout behavior
 

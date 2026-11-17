@@ -10,8 +10,7 @@ public interface ICourierRepository
     Task<PagedResponseDto<Courier>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search);
-    Task<List<User>> GetEligibleCourierUsersAsync(int? excludeCourierId = null);
-
+    Task<List<Courier>> GetActiveCouriersForDispatchAsync();
     // Get courier by ID.
     Task<Courier?> GetByIdAsync(int id);
 
@@ -22,9 +21,6 @@ public interface ICourierRepository
     Task<string> GenerateUniqueEmployeeCodeAsync();
     Task<bool> IsActiveCourierUserAsync(int userId);
     Task<bool> UserHasCourierProfileAsync(int userId, int? excludeCourierId = null);
-
-    // Add a new courier.
-    Task AddAsync(Courier courier);
 
     // Update an existing courier.
     Task UpdateAsync(Courier courier);

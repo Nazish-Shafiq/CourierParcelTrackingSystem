@@ -33,17 +33,17 @@ public class CourierService : ICourierService
         };
     }
 
-    public async Task<IReadOnlyList<EligibleCourierUserDto>> GetEligibleCourierUsersAsync(
-        int? excludeCourierId = null)
+    public async Task<List<CourierDispatchOptionDto>> GetDispatchOptionsAsync()
     {
-        var users = await _repository.GetEligibleCourierUsersAsync(excludeCourierId);
-        return users.Select(user => new EligibleCourierUserDto
+        var couriers = await _repository.GetActiveCouriersForDispatchAsync();
+
+        return couriers.Select(courier => new CourierDispatchOptionDto
         {
-            UserId = user.UserId,
-            UserName = user.UserName,
-            FullName = user.FullName,
-            Email = user.Email,
-            Phone = user.Phone
+            CourierId = courier.CourierId,
+            EmployeeCode = courier.EmployeeCode,
+            FullName = courier.FullName,
+            VehicleType = courier.VehicleType,
+            IsAvailable = courier.IsAvailable
         }).ToList();
     }
 
@@ -53,40 +53,6 @@ public class CourierService : ICourierService
         var courier = await _repository.GetByIdAsync(id);
 
         return courier is null ? null : Map(courier);
-    }
-
-    // Create a new courier.
-    public async Task<CourierResponseDto> CreateAsync(
-        CreateCourierRequestDto request,
-        int? createdBy)
-    {
-        await EnsureUserCanBeLinkedAsync(request.UserId);
-
-        // Create courier entity.
-        var courier = new Courier
-        {
-            UserId = request.UserId,
-            EmployeeCode = await _repository.GenerateUniqueEmployeeCodeAsync(),
-            FullName = request.FullName.Trim(),
-            Phone = request.Phone.Trim(),
-            Email = Normalize(request.Email),
-            VehicleType = Normalize(request.VehicleType),
-            VehicleNumber = Normalize(request.VehicleNumber),
-
-            // Default values.
-            IsAvailable = true,
-            IsActive = true,
-            IsDeleted = false,
-
-            // Audit information.
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = createdBy
-        };
-
-        // Save courier in database.
-        await _repository.AddAsync(courier);
-
-        return Map(courier);
     }
 
     // Update an existing courier.

@@ -10,36 +10,13 @@ export async function getCouriers({ page = 1, pageSize = 10, search, signal } = 
   return getResponseData(response.data)
 }
 
-export async function getCourierById(id, signal) {
-  const response = await axiosInstance.get(`${API_PATHS.couriers}/${id}`, { signal })
+export async function getDispatchCourierOptions(signal) {
+  const response = await axiosInstance.get(`${API_PATHS.couriers}/dispatch-options`, { signal })
   return getResponseData(response.data)
 }
 
-export async function getEligibleCourierUsers(excludeCourierId, signal) {
-  const response = await axiosInstance.get(`${API_PATHS.couriers}/eligible-users`, {
-    params: { excludeCourierId },
-    signal,
-  })
-  const users = getResponseData(response.data)
-  if (!Array.isArray(users)) {
-    throw new Error('The eligible Courier users response did not contain a user list.')
-  }
-  return users.map((user) => {
-    if (
-      !Number.isInteger(Number(user?.userId))
-      || Number(user.userId) <= 0
-      || typeof user?.userName !== 'string'
-      || typeof user?.fullName !== 'string'
-      || typeof user?.email !== 'string'
-    ) {
-      throw new Error('The eligible Courier users response contained an invalid account.')
-    }
-    return user
-  })
-}
-
-export async function createCourier(request) {
-  const response = await axiosInstance.post(API_PATHS.couriers, request)
+export async function getCourierById(id, signal) {
+  const response = await axiosInstance.get(`${API_PATHS.couriers}/${id}`, { signal })
   return getResponseData(response.data)
 }
 

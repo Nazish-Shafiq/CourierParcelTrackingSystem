@@ -32,6 +32,7 @@ public class ParcelAssignmentController : ControllerBase
     // POST: api/parcel-assignments
     // Assign a parcel to a courier.
     [HttpPost]
+    [Authorize(Roles = "Admin,Dispatcher")]
     public async Task<ActionResult<ApiResponse<ParcelAssignmentResponseDto>>> AssignParcel(
         [FromBody] AssignParcelRequestDto request)
     {
@@ -90,6 +91,7 @@ public class ParcelAssignmentController : ControllerBase
     // PUT: api/parcel-assignments/{id}/reassign
     // Reassign a parcel to another courier.
     [HttpPut("{id:long}/reassign")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     public async Task<ActionResult<ApiResponse<ParcelAssignmentResponseDto>>> ReassignParcel(
         long id,
         [FromBody] ReassignParcelRequestDto request)
@@ -107,6 +109,7 @@ public class ParcelAssignmentController : ControllerBase
     // PUT: api/parcel-assignments/{id}/unassign
     // Unassign a courier from a parcel.
     [HttpPut("{id:long}/unassign")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     public async Task<ActionResult<ApiResponse<string>>> UnassignParcel(
         long id)
     {
