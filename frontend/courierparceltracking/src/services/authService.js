@@ -3,6 +3,8 @@ import { API_BASE_URL, AUTH_API_PATH } from './api/apiConfig'
 import { ApiError, getResponseData } from './api/baseResponse'
 import { clearAccessToken, getAccessToken, storeAccessToken } from '../utils/tokenStorage'
 
+let currentUserRequest = null
+
 function ensureApiUrl() {
   if (!API_BASE_URL) {
     throw new Error('Set VITE_API_URL in the frontend .env file before making API requests.')
@@ -17,13 +19,13 @@ function ensureSecurePasswordTransport() {
 
   const proxyTarget = import.meta.env.VITE_API_PROXY_TARGET
   const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(apiUrl.hostname)
-  const usesLocalHttpsProxy = import.meta.env.DEV
+  const usesLocalDevProxy = import.meta.env.DEV
     && API_BASE_URL.startsWith('/')
     && isLocalHost
     && typeof proxyTarget === 'string'
-    && proxyTarget.trim().toLowerCase().startsWith('https://')
+    && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(proxyTarget.trim())
 
-  if (!usesLocalHttpsProxy) {
+  if (!usesLocalDevProxy) {
     throw new ApiError('Password requests require an HTTPS API connection.')
   }
 }
@@ -106,8 +108,16 @@ export async function registerCustomer(request) {
 
 export async function getCurrentUser() {
   ensureApiUrl()
-  const response = await axiosInstance.get(`${AUTH_API_PATH}/me`)
-  return normalizeUser(getResponseData(response.data))
+  if (currentUserRequest) return currentUserRequest
+
+  currentUserRequest = axiosInstance
+    .get(`${AUTH_API_PATH}/me`)
+    .then((response) => normalizeUser(getResponseData(response.data)))
+    .finally(() => {
+      currentUserRequest = null
+    })
+
+  return currentUserRequest
 }
 
 export async function logout() {

@@ -8,7 +8,8 @@ public interface IParcelAssignmentRepository
 {
     // Get all assignments with pagination.
     Task<PagedResponseDto<ParcelAssignment>> GetPagedAsync(
-        PaginationRequestDto request);
+        PaginationRequestDto request,
+        bool? activeOnly);
 
     // Get an assignment by its ID.
     Task<ParcelAssignment?> GetByIdAsync(long assignmentId);

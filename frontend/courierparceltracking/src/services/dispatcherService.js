@@ -1,14 +1,6 @@
 import { getActiveParcelAssignments } from './parcelAssignmentService'
 import { getParcels } from './parcelService'
-import { getDispatchCourierOptions } from './courierService'
-
-async function getAllCouriers(signal) {
-  const couriers = await getDispatchCourierOptions(signal)
-  if (!Array.isArray(couriers)) {
-    throw new Error('The courier dispatch options response was invalid.')
-  }
-  return couriers
-}
+import { getCouriers, getDispatchCourierOptions } from './courierService'
 
 function getUnassignedParcels(parcels, assignments) {
   const assignedParcelIds = new Set(
@@ -18,19 +10,6 @@ function getUnassignedParcels(parcels, assignments) {
   )
 
   return parcels.filter((parcel) => !assignedParcelIds.has(parcel.parcelId))
-}
-
-function getAvailableCouriers(couriers, assignments) {
-  const assignedCourierIds = new Set(
-    assignments
-      .filter((assignment) => assignment.unassignedAt == null)
-      .map((assignment) => assignment.courierId),
-  )
-
-  return couriers.filter((courier) => (
-    courier.isAvailable
-    && !assignedCourierIds.has(courier.courierId)
-  ))
 }
 
 export async function getDispatcherUnassignedParcels(signal) {
@@ -47,10 +26,9 @@ export async function getDispatcherUnassignedParcels(signal) {
 }
 
 export async function getDispatcherAssignmentOptions(signal) {
-  const [parcels, assignments, couriers] = await Promise.all([
+  const [parcels, assignments] = await Promise.all([
     getParcels(signal),
     getActiveParcelAssignments(signal),
-    getAllCouriers(signal),
   ])
 
   if (!Array.isArray(parcels) || !Array.isArray(assignments)) {
@@ -59,29 +37,26 @@ export async function getDispatcherAssignmentOptions(signal) {
 
   return {
     parcels: getUnassignedParcels(parcels, assignments),
-    couriers: getAvailableCouriers(couriers, assignments),
   }
 }
 
-export async function getDispatcherAvailableCouriers(signal) {
-  const [couriers, assignments] = await Promise.all([
-    getAllCouriers(signal),
-    getActiveParcelAssignments(signal),
-  ])
-
-  if (!Array.isArray(assignments)) {
-    throw new Error('The active assignments response was invalid.')
+export async function getDispatcherAvailableCouriers(parcelId, signal) {
+  const couriers = await getDispatchCourierOptions(parcelId, signal)
+  if (!Array.isArray(couriers)) {
+    throw new Error('The courier dispatch options response was invalid.')
   }
-
-  return getAvailableCouriers(couriers, assignments)
+  return couriers
 }
 
 export async function getDispatcherCouriers(signal) {
-  const [couriers, assignments] = await Promise.all([
-    getAllCouriers(signal),
+  const [pagedCouriers, assignments] = await Promise.all([
+    getCouriers({ page: 1, pageSize: 100, signal }),
     getActiveParcelAssignments(signal),
   ])
 
+  if (!pagedCouriers || !Array.isArray(pagedCouriers.items)) {
+    throw new Error('The courier directory response was invalid.')
+  }
   if (!Array.isArray(assignments)) {
     throw new Error('The active assignments response was invalid.')
   }
@@ -92,7 +67,7 @@ export async function getDispatcherCouriers(signal) {
       .map((assignment) => assignment.courierId),
   )
 
-  return couriers.map((courier) => ({
+  return pagedCouriers.items.map((courier) => ({
     ...courier,
     hasActiveAssignment: assignedCourierIds.has(courier.courierId),
   }))

@@ -113,13 +113,13 @@ function BookingAgentDashboard() {
       {dashboard.data && (
         <>
           <div className="dashboard-stat-grid">
-            <DashboardStatCard icon={Package} label="Total parcels booked" onClick={() => navigate('/booking/bookings')} value={summary.totalParcels} />
+            <DashboardStatCard icon={Package} label="Total parcels booked" onClick={() => navigate('/booking/bookings?filter=all')} value={summary.totalParcels} />
             <DashboardStatCard accent="green" icon={Users} label="Total customers registered" onClick={() => navigate('/booking/customers')} value={summary.totalCustomers} />
-            <DashboardStatCard accent="violet" icon={ClipboardList} label="Today's bookings" onClick={() => navigate('/booking/bookings')} value={summary.todaysBookings} />
-            <DashboardStatCard accent="amber" icon={PackageSearch} label="Pending parcels" onClick={() => navigate('/booking/bookings')} value={summary.pendingParcels} />
-            <DashboardStatCard icon={Truck} label="In transit parcels" onClick={() => navigate('/booking/bookings')} value={summary.inTransitParcels} />
-            <DashboardStatCard accent="green" icon={PackageCheck} label="Delivered parcels" onClick={() => navigate('/booking/bookings')} value={summary.deliveredParcels} />
-            <DashboardStatCard accent="red" icon={PackageSearch} label="Failed deliveries" onClick={() => navigate('/booking/bookings')} value={summary.failedDeliveries} />
+            <DashboardStatCard accent="violet" icon={ClipboardList} label="Today's bookings" onClick={() => navigate('/booking/bookings?filter=today')} value={summary.todaysBookings} />
+            <DashboardStatCard accent="amber" icon={PackageSearch} label="Pending parcels" onClick={() => navigate('/booking/bookings?filter=pending')} value={summary.pendingParcels} />
+            <DashboardStatCard icon={Truck} label="In transit parcels" onClick={() => navigate('/booking/bookings?filter=transit')} value={summary.inTransitParcels} />
+            <DashboardStatCard accent="green" icon={PackageCheck} label="Delivered parcels" onClick={() => navigate('/booking/bookings?filter=delivered')} value={summary.deliveredParcels} />
+            <DashboardStatCard accent="red" icon={PackageSearch} label="Failed deliveries" onClick={() => navigate('/booking/bookings?filter=failed')} value={summary.failedDeliveries} />
           </div>
 
           <DashboardSection description="Live counts derived from the valid parcel and customer data returned by the backend." title="Parcel booking overview">

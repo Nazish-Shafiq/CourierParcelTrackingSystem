@@ -19,9 +19,10 @@ public class HubService : IHubService
     // Get hubs with pagination and optional search.
     public async Task<PagedResponseDto<HubResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? activeOnly)
     {
-        var result = await _repository.GetPagedAsync(pagination, search);
+        var result = await _repository.GetPagedAsync(pagination, search, activeOnly);
 
         return new PagedResponseDto<HubResponseDto>
         {

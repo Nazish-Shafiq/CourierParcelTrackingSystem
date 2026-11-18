@@ -43,5 +43,13 @@ public partial class Hub
 
     public virtual ICollection<StatusEvent> StatusEvents { get; set; } = new List<StatusEvent>();
 
+    public virtual ICollection<Courier> Couriers { get; set; } = new List<Courier>();
+
+    public virtual ICollection<Parcel> CurrentHubParcels { get; set; } = new List<Parcel>();
+
+    public virtual ICollection<HubTransfer> SourceHubTransfers { get; set; } = new List<HubTransfer>();
+
+    public virtual ICollection<HubTransfer> DestinationHubTransfers { get; set; } = new List<HubTransfer>();
+
     public virtual User? UpdatedByNavigation { get; set; }
 }

@@ -11,7 +11,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/parcel-assignments")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Dispatcher")]
 public class ParcelAssignmentController : ControllerBase
 {
     private readonly IParcelAssignmentService _service;
@@ -54,9 +54,10 @@ public class ParcelAssignmentController : ControllerBase
     // Get all assignments with pagination.
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResponseDto<ParcelAssignmentResponseDto>>>> GetAll(
-        [FromQuery] PaginationRequestDto request)
+        [FromQuery] PaginationRequestDto request,
+        [FromQuery] bool? activeOnly)
     {
-        var result = await _service.GetPagedAsync(request);
+        var result = await _service.GetPagedAsync(request, activeOnly);
 
         return Ok(ApiResponse<PagedResponseDto<ParcelAssignmentResponseDto>>.Ok(
             result,

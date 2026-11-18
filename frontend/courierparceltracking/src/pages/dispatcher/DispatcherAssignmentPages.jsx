@@ -1,5 +1,5 @@
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import EmptyState from '../../components/common/EmptyState'
@@ -52,6 +52,14 @@ function DispatcherAssignParcelPage() {
   const [submitError, setSubmitError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [courierRefreshKey, setCourierRefreshKey] = useState(0)
+  const [courierLookup, setCourierLookup] = useState({
+    parcelId: '',
+    refreshKey: 0,
+    couriers: [],
+    isLoading: false,
+    error: null,
+  })
 
   const loadOptions = useCallback(
     (signal) => getDispatcherAssignmentOptions(signal),
@@ -61,7 +69,46 @@ function DispatcherAssignParcelPage() {
   const options = useDashboardData(loadOptions)
 
   const parcelOptions = options.data?.parcels ?? []
-  const courierOptions = options.data?.couriers ?? []
+  const currentCourierLookup = courierLookup.parcelId === parcelId
+    && courierLookup.refreshKey === courierRefreshKey
+    ? courierLookup
+    : { couriers: [], isLoading: Boolean(parcelId), error: null }
+  const courierOptions = currentCourierLookup.couriers
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const selectedParcelId = parcelId
+    const selectedRefreshKey = courierRefreshKey
+    const lookup = selectedParcelId
+      ? getDispatcherAvailableCouriers(Number(selectedParcelId), controller.signal)
+      : Promise.resolve([])
+
+    lookup
+      .then((couriers) => {
+        if (!controller.signal.aborted) {
+          setCourierLookup({
+            parcelId: selectedParcelId,
+            refreshKey: selectedRefreshKey,
+            couriers,
+            isLoading: false,
+            error: null,
+          })
+        }
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setCourierLookup({
+            parcelId: selectedParcelId,
+            refreshKey: selectedRefreshKey,
+            couriers: [],
+            isLoading: false,
+            error,
+          })
+        }
+      })
+
+    return () => controller.abort()
+  }, [parcelId, courierRefreshKey])
 
   const requestedParcelId = searchParams.get('parcelId') ?? ''
 
@@ -157,8 +204,11 @@ function DispatcherAssignParcelPage() {
       <PageHeader
         actions={
           <RefreshButton
-            isLoading={options.isLoading}
-            onRefresh={options.refresh}
+            isLoading={options.isLoading || currentCourierLookup.isLoading}
+            onRefresh={() => {
+              options.refresh()
+              setCourierRefreshKey((key) => key + 1)
+            }}
           />
         }
         description="Assign an unassigned parcel to a courier currently reported as active and available."
@@ -207,13 +257,30 @@ function DispatcherAssignParcelPage() {
             </p>
           )}
 
-          {courierOptions.length === 0 && (
+          {parcelId && currentCourierLookup.isLoading && (
+            <div className="dispatcher-inline-loading" role="status">
+              Loading couriers assigned to the parcel's operational hub…
+            </div>
+          )}
+
+          {parcelId && currentCourierLookup.error && (
+            <ErrorMessage
+              error={currentCourierLookup.error}
+              onRetry={() => setCourierRefreshKey((key) => key + 1)}
+            />
+          )}
+
+          {parcelId &&
+            !currentCourierLookup.isLoading &&
+            !currentCourierLookup.error &&
+            courierOptions.length === 0 && (
             <p className="dispatcher-inline-empty">
-              There are no active, available couriers to assign.
+              No active, available couriers are assigned to this parcel's
+              operational hub.
             </p>
           )}
 
-          {parcelOptions.length > 0 && courierOptions.length > 0 ? (
+          {parcelOptions.length > 0 ? (
             <form
               className="dispatcher-form"
               onSubmit={handleSubmit}
@@ -224,6 +291,7 @@ function DispatcherAssignParcelPage() {
                 label="Unassigned parcel"
                 onChange={(event) => {
                   setParcelId(event.target.value)
+                  setCourierId('')
                   setSubmitError('')
                   setSuccessMessage('')
                 }}
@@ -244,11 +312,12 @@ function DispatcherAssignParcelPage() {
                   setSubmitError('')
                   setSuccessMessage('')
                 }}
+                disabled={!parcelId || currentCourierLookup.isLoading || courierOptions.length === 0}
                 options={courierOptions.map((courier) => ({
                   value: String(courier.courierId),
-                  label: `${courier.fullName} (${courier.employeeCode})`,
+                  label: `${courier.fullName} (${courier.employeeCode}) — ${courier.hubName}`,
                 }))}
-                placeholder="Select a courier"
+                placeholder={parcelId ? 'Select a courier' : 'Select a parcel first'}
                 required
                 value={courierId}
               />
@@ -265,7 +334,12 @@ function DispatcherAssignParcelPage() {
               <div className="dispatcher-form__actions">
 
                 <Button
-                  disabled={isSubmitting || options.isLoading}
+                  disabled={
+                    isSubmitting ||
+                    options.isLoading ||
+                    currentCourierLookup.isLoading ||
+                    !courierOptions.length
+                  }
                   isLoading={isSubmitting}
                   type="submit"
                 >
@@ -310,8 +384,8 @@ function ReassignDialog({ assignment, onClose, onSubmit }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadCouriers = useCallback(
-    (signal) => getDispatcherAvailableCouriers(signal),
-    [],
+    (signal) => getDispatcherAvailableCouriers(assignment.parcelId, signal),
+    [assignment.parcelId],
   )
 
   const couriers = useDashboardData(loadCouriers)
@@ -417,7 +491,7 @@ function ReassignDialog({ assignment, onClose, onSubmit }) {
                 onChange={(event) => setCourierId(event.target.value)}
                 options={couriers.data.map((courier) => ({
                   value: String(courier.courierId),
-                  label: `${courier.fullName} (${courier.employeeCode})`,
+                  label: `${courier.fullName} (${courier.employeeCode}) — ${courier.hubName}`,
                 }))}
                 placeholder="Select a courier"
                 required
@@ -474,6 +548,8 @@ function ReassignDialog({ assignment, onClose, onSubmit }) {
 // ============================================================
 
 function DispatcherAssignmentsPage() {
+  const [searchParams] = useSearchParams()
+  const activeOnly = searchParams.get('active') === 'true'
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedAssignment, setSelectedAssignment] = useState(null)
   const [pendingUnassign, setPendingUnassign] = useState(null)
@@ -485,9 +561,10 @@ function DispatcherAssignmentsPage() {
     (signal) => getParcelAssignments({
       page: currentPage,
       pageSize: PAGE_SIZE,
+      activeOnly,
       signal,
     }),
-    [currentPage],
+    [activeOnly, currentPage],
   )
 
   const assignments = useDashboardData(loadAssignments)

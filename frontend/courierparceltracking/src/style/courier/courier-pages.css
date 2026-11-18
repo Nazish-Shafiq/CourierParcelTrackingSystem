@@ -12,7 +12,7 @@
   border: 1px solid var(--color-border);
   border-radius: 0.8rem;
   background: var(--color-surface);
-  box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+  box-shadow: 0 0.35rem 1.1rem rgb(23 37 84 / 6%);
 }
 
 .courier-parcel-list-card {
@@ -159,8 +159,8 @@
   height: 0.65rem;
   margin-top: 0.45rem;
   border-radius: 50%;
-  background: #039855;
-  box-shadow: 0 0 0 0.25rem #ecfdf3;
+  background: var(--color-brand);
+  box-shadow: 0 0 0 0.25rem var(--color-info-bg);
 }
 
 .courier-tracking-event__content {
@@ -221,8 +221,8 @@
 
 .courier-quick-link:hover {
   transform: translateY(-1px);
-  border-color: #a6f4c5;
-  box-shadow: 0 0.35rem 1rem rgb(16 24 40 / 8%);
+  border-color: #BFDBFE;
+  box-shadow: 0 0.35rem 1rem rgb(23 37 84 / 8%);
 }
 
 .courier-quick-link__icon {
@@ -232,8 +232,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.6rem;
-  color: #027a48;
-  background: #ecfdf3;
+  color: var(--color-brand);
+  background: var(--color-info-bg);
 }
 
 @media (max-width: 700px) {

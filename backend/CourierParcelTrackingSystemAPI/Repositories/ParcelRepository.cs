@@ -1,4 +1,5 @@
 using CourierParcelTrackingSystem.API.Data;
+using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,105 @@ public class ParcelRepository : IParcelRepository
 
     public Task<Parcel?> GetByIdAsync(long id) =>
         ParcelQuery().FirstOrDefaultAsync(p => p.ParcelId == id);
+
+    public async Task<(int TotalParcels, int BookedParcels, int DeliveredParcels)> GetCustomerParcelCountsAsync(
+        int userId)
+    {
+        var query = CustomerParcelQuery(userId);
+        var total = await query.CountAsync();
+        var booked = await query.CountAsync(p => p.CurrentStatus.StatusCode == "BOOKED");
+        var delivered = await query.CountAsync(p => p.CurrentStatus.StatusCode == "DELIVERED");
+
+        return (total, booked, delivered);
+    }
+
+    public async Task<PagedResponseDto<Parcel>> GetCustomerParcelsAsync(
+        int userId,
+        PaginationRequestDto pagination,
+        string? search,
+        string? statusCode)
+    {
+        IQueryable<Parcel> query = CustomerParcelQuery(userId)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.OriginHub)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.DestinationHub);
+
+        if (!string.IsNullOrWhiteSpace(statusCode) &&
+            !string.Equals(statusCode, "ALL", StringComparison.OrdinalIgnoreCase))
+        {
+            var requestedStatus = statusCode.Trim();
+            query = query.Where(p => p.CurrentStatus.StatusCode == requestedStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var requestedSearch = search.Trim();
+            query = query.Where(p =>
+                p.TrackingNumber.Contains(requestedSearch) ||
+                p.CurrentStatus.StatusName.Contains(requestedSearch) ||
+                (p.Route != null &&
+                    p.Route.IsActive &&
+                    !p.Route.IsDeleted &&
+                    p.Route.OriginHub.IsActive &&
+                    !p.Route.OriginHub.IsDeleted &&
+                    p.Route.DestinationHub.IsActive &&
+                    !p.Route.DestinationHub.IsDeleted &&
+                    (p.Route.OriginHub.HubName.Contains(requestedSearch) ||
+                     p.Route.DestinationHub.HubName.Contains(requestedSearch))));
+        }
+
+        var totalRecords = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(p => p.BookingDate)
+            .ThenByDescending(p => p.ParcelId)
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .ToListAsync();
+
+        return new PagedResponseDto<Parcel>
+        {
+            Items = items,
+            Page = pagination.Page,
+            PageSize = pagination.PageSize,
+            TotalRecords = totalRecords,
+            TotalPages = (int)Math.Ceiling((double)totalRecords / pagination.PageSize)
+        };
+    }
+
+    public Task<Parcel?> GetCustomerParcelDetailsAsync(int userId, long parcelId) =>
+        CustomerParcelQuery(userId)
+            .Include(p => p.SenderCustomer)
+            .Include(p => p.ParcelRecipient)
+            .Include(p => p.CurrentHub)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.OriginHub)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.DestinationHub)
+            .Include(p => p.StatusEvents
+                .Where(e => e.ParcelStatus.IsActive && !e.ParcelStatus.IsDeleted))
+                .ThenInclude(e => e.ParcelStatus)
+            .Include(p => p.StatusEvents
+                .Where(e => e.ParcelStatus.IsActive && !e.ParcelStatus.IsDeleted))
+                .ThenInclude(e => e.Hub)
+            .FirstOrDefaultAsync(p => p.ParcelId == parcelId);
+
+    private IQueryable<Parcel> CustomerParcelQuery(int userId) =>
+        _context.Parcels
+            .AsNoTracking()
+            .Where(p =>
+                p.IsActive &&
+                !p.IsDeleted &&
+                p.CurrentStatus.IsActive &&
+                !p.CurrentStatus.IsDeleted &&
+                p.SenderCustomer.IsActive &&
+                !p.SenderCustomer.IsDeleted &&
+                p.SenderCustomer.UserId == userId &&
+                p.SenderCustomer.User != null &&
+                p.SenderCustomer.User.IsActive &&
+                !p.SenderCustomer.User.IsDeleted)
+            .Include(p => p.SenderCustomer)
+            .Include(p => p.CurrentStatus);
 
     public Task<bool> CustomerExistsAsync(int customerId) =>
         _context.Customers.AnyAsync(c => c.CustomerId == customerId && c.IsActive && !c.IsDeleted);

@@ -10,7 +10,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/reports")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
 public class ReportsController : ControllerBase
 {
     private readonly IReportsService _reportsService;

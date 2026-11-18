@@ -2,16 +2,24 @@ import axiosInstance from './api/axiosInstance'
 import { API_PATHS } from './api/apiConfig'
 import { getResponseData } from './api/baseResponse'
 
-export async function getCouriers({ page = 1, pageSize = 10, search, signal } = {}) {
+export async function getCouriers({ page = 1, pageSize = 10, search, isAvailable, signal } = {}) {
   const response = await axiosInstance.get(API_PATHS.couriers, {
-    params: { page, pageSize, search },
+    params: { page, pageSize, search, isAvailable },
     signal,
   })
   return getResponseData(response.data)
 }
 
-export async function getDispatchCourierOptions(signal) {
-  const response = await axiosInstance.get(`${API_PATHS.couriers}/dispatch-options`, { signal })
+export async function getDispatchCourierOptions(parcelId, signal) {
+  const parsedParcelId = Number(parcelId)
+  if (!Number.isFinite(parsedParcelId) || parsedParcelId <= 0) {
+    throw new Error('A valid parcel must be selected to load eligible couriers.')
+  }
+
+  const response = await axiosInstance.get(`${API_PATHS.couriers}/dispatch-options`, {
+    params: { parcelId: parsedParcelId },
+    signal,
+  })
   return getResponseData(response.data)
 }
 

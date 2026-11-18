@@ -10,18 +10,26 @@ namespace CourierParcelTrackingSystem.API.Services;
 public class CourierService : ICourierService
 {
     private readonly ICourierRepository _repository;
+    private readonly IParcelAssignmentRepository _assignmentRepository;
+    private readonly IHubRepository _hubRepository;
 
-    public CourierService(ICourierRepository repository)
+    public CourierService(
+        ICourierRepository repository,
+        IParcelAssignmentRepository assignmentRepository,
+        IHubRepository hubRepository)
     {
         _repository = repository;
+        _assignmentRepository = assignmentRepository;
+        _hubRepository = hubRepository;
     }
 
     // Get couriers with pagination and optional search.
     public async Task<PagedResponseDto<CourierResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? isAvailable)
     {
-        var result = await _repository.GetPagedAsync(pagination, search);
+        var result = await _repository.GetPagedAsync(pagination, search, isAvailable);
 
         return new PagedResponseDto<CourierResponseDto>
         {
@@ -33,13 +41,26 @@ public class CourierService : ICourierService
         };
     }
 
-    public async Task<List<CourierDispatchOptionDto>> GetDispatchOptionsAsync()
+    public async Task<List<CourierDispatchOptionDto>> GetDispatchOptionsAsync(long parcelId)
     {
-        var couriers = await _repository.GetActiveCouriersForDispatchAsync();
+        var parcel = await _assignmentRepository.GetParcelForAssignmentAsync(parcelId);
+        if (parcel is null)
+            throw new KeyNotFoundException("Parcel not found or inactive.");
+
+        ParcelAssignmentHubResolver.EnsureParcelCanBeAssigned(parcel);
+        var operationalHub = ParcelAssignmentHubResolver.ResolveOperationalHub(parcel);
+        if (operationalHub is null || !operationalHub.IsActive || operationalHub.IsDeleted)
+            throw new InvalidOperationException(
+                "The parcel does not have an active operational hub for courier assignment.");
+
+        var couriers = await _repository.GetActiveCouriersForDispatchAsync(
+            operationalHub.HubId);
 
         return couriers.Select(courier => new CourierDispatchOptionDto
         {
             CourierId = courier.CourierId,
+            HubId = operationalHub.HubId,
+            HubName = operationalHub.HubName,
             EmployeeCode = courier.EmployeeCode,
             FullName = courier.FullName,
             VehicleType = courier.VehicleType,
@@ -67,6 +88,24 @@ public class CourierService : ICourierService
         if (courier == null)
             return null;
 
+        if (!request.HubId.HasValue)
+            throw new ArgumentException(
+                "An active hub must be selected for a Courier profile.",
+                nameof(request.HubId));
+
+        var assignedHub = await _hubRepository.GetByIdAsync(request.HubId.Value);
+        if (assignedHub is null || !assignedHub.IsActive)
+            throw new ArgumentException(
+                "The selected hub does not exist or is inactive.",
+                nameof(request.HubId));
+
+        if (courier.HubId != assignedHub.HubId &&
+            await _repository.HasActiveAssignmentAsync(id))
+        {
+            throw new InvalidOperationException(
+                "A Courier's hub cannot be changed while they have an active parcel assignment.");
+        }
+
         if (request.UserId.HasValue)
         {
             await EnsureUserCanBeLinkedAsync(request.UserId.Value, id);
@@ -77,6 +116,8 @@ public class CourierService : ICourierService
         courier.FullName = request.FullName.Trim();
         courier.Phone = request.Phone.Trim();
         courier.Email = Normalize(request.Email);
+        courier.HubId = assignedHub.HubId;
+        courier.Hub = assignedHub;
         courier.VehicleType = Normalize(request.VehicleType);
         courier.VehicleNumber = Normalize(request.VehicleNumber);
         courier.IsAvailable = request.IsAvailable;
@@ -138,6 +179,8 @@ public class CourierService : ICourierService
     {
         CourierId = c.CourierId,
         UserId = c.UserId,
+        HubId = c.HubId,
+        HubName = c.Hub?.HubName,
         EmployeeCode = c.EmployeeCode,
         FullName = c.FullName,
         Phone = c.Phone,

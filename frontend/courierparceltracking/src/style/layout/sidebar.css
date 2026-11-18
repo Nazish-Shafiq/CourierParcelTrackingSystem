@@ -8,7 +8,7 @@
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background: #FFFFFF;
 }
 
 .app-sidebar__brand-row {
@@ -70,7 +70,7 @@
   margin: 0.2rem 0;
   padding: 0.65rem 0.75rem;
   border-radius: 0.6rem;
-  color: #475467;
+  color: var(--color-muted);
   font-size: 0.88rem;
   font-weight: 500;
   text-decoration: none;
@@ -79,13 +79,13 @@
 
 .app-sidebar__link:hover {
   color: var(--color-brand);
-  background: #f2f6ff;
+  background: #EFF6FF;
 }
 
 .app-sidebar__link--active,
 .app-sidebar__link--active:hover {
   color: var(--color-brand);
-  background: #eef4ff;
+  background: #EAF1FF;
   font-weight: 650;
 }
 
@@ -108,7 +108,7 @@
 
 .app-sidebar__collapse:hover {
   color: var(--color-text);
-  background: #f8fafc;
+  background: var(--color-surface-hover);
 }
 
 .app-sidebar__mobile-close {

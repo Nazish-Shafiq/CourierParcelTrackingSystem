@@ -44,6 +44,8 @@ function AdminDashboard() {
   function countUsersForRole(roleName) {
     if (!Array.isArray(users.data)) return '—'
     return users.data.filter((user) => (
+      user.isActive !== false
+      &&
       user.roles.some((role) => role.toLowerCase() === roleName.toLowerCase())
     )).length
   }
@@ -107,26 +109,26 @@ function AdminDashboard() {
             <DashboardStatCard
               icon={Users}
               label="Active booking agents"
-              onClick={() => navigate('/admin/users')}
+              onClick={() => navigate('/admin/users?role=Booking%20Agent')}
               value={countUsersForRole(ROLE_NAMES.BOOKING_AGENT)}
             />
             <DashboardStatCard
               accent="violet"
               icon={Users}
               label="Active dispatchers"
-              onClick={() => navigate('/admin/users')}
+              onClick={() => navigate('/admin/users?role=Dispatcher')}
               value={countUsersForRole(ROLE_NAMES.DISPATCHER)}
             />
             <DashboardStatCard
               accent="green"
               label="Available couriers"
-              onClick={() => navigate('/admin/couriers')}
+              onClick={() => navigate('/admin/couriers?availability=available')}
               value={dashboard.data.availableCouriers}
             />
             <DashboardStatCard
               accent="amber"
               label="Busy couriers"
-              onClick={() => navigate('/admin/couriers')}
+              onClick={() => navigate('/admin/couriers?availability=busy')}
               value={dashboard.data.busyCouriers}
             />
           </div>
@@ -140,10 +142,15 @@ function AdminDashboard() {
             ) : (
               <div className="dashboard-status-grid">
                 {dashboard.data.parcelStatusSummary.map((status) => (
-                  <article className="dashboard-status-card" key={status.parcelStatusId}>
+                  <button
+                    className="dashboard-status-card stat-card--interactive"
+                    key={status.parcelStatusId}
+                    onClick={() => navigate(`/admin/parcels?status=${encodeURIComponent(status.statusName)}`)}
+                    type="button"
+                  >
                     <StatusBadge status={status.statusName} />
                     <strong>{status.totalParcels}</strong>
-                  </article>
+                  </button>
                 ))}
               </div>
             )}

@@ -227,6 +227,7 @@ public class ParcelTrackingService : IParcelTrackingService
         if (targetStatusCode is not (
             "PICKED_UP" or
             "IN_TRANSIT" or
+            "AT_DESTINATION_HUB" or
             "OUT_FOR_DELIVERY" or
             "DELIVERED" or
             "DELIVERY_ATTEMPTED"))
@@ -249,6 +250,7 @@ public class ParcelTrackingService : IParcelTrackingService
         {
             "BOOKED" => targetStatusCode == "PICKED_UP",
             "PICKED_UP" => targetStatusCode == "IN_TRANSIT",
+            "IN_TRANSIT" => targetStatusCode == "AT_DESTINATION_HUB",
             "AT_DESTINATION_HUB" => targetStatusCode == "OUT_FOR_DELIVERY",
             "DELIVERY_ATTEMPTED" => targetStatusCode == "OUT_FOR_DELIVERY",
             "OUT_FOR_DELIVERY" => targetStatusCode is "DELIVERED" or "DELIVERY_ATTEMPTED",

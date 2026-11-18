@@ -20,6 +20,7 @@ public class AuthService : IAuthService
         StringComparer.OrdinalIgnoreCase);
     private readonly IAuthRepository _repository;
     private readonly ICourierRepository _courierRepository;
+    private readonly IHubRepository _hubRepository;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly JwtSettings _jwt;
     private readonly IConfiguration _configuration;
@@ -27,11 +28,13 @@ public class AuthService : IAuthService
     public AuthService(
         IAuthRepository repository,
         ICourierRepository courierRepository,
+        IHubRepository hubRepository,
         IPasswordHasher<User> passwordHasher,
         IOptions<JwtSettings> jwtOptions, IConfiguration configuration)
     {
         _repository = repository;
         _courierRepository = courierRepository;
+        _hubRepository = hubRepository;
         _passwordHasher = passwordHasher;
         _jwt = jwtOptions.Value;
         _configuration = configuration;
@@ -66,6 +69,21 @@ public class AuthService : IAuthService
             role.RoleName,
             CourierRoleName,
             StringComparison.OrdinalIgnoreCase);
+        Hub? assignedHub = null;
+        if (isCourier)
+        {
+            if (!request.HubId.HasValue)
+                throw new ArgumentException(
+                    "An active hub must be selected for a Courier account.",
+                    nameof(request.HubId));
+
+            assignedHub = await _hubRepository.GetByIdAsync(request.HubId.Value);
+            if (assignedHub is null || !assignedHub.IsActive)
+                throw new ArgumentException(
+                    "The selected hub does not exist or is inactive.",
+                    nameof(request.HubId));
+        }
+
         if (isCourier &&
             (string.IsNullOrWhiteSpace(request.Phone) || request.Phone.Trim().Length < 7))
             throw new ArgumentException(
@@ -86,7 +104,8 @@ public class AuthService : IAuthService
                 Phone = request.Phone!.Trim(),
                 Email = Normalize(request.Email),
                 VehicleType = Normalize(request.VehicleType),
-                VehicleNumber = Normalize(request.VehicleNumber)
+                VehicleNumber = Normalize(request.VehicleNumber),
+                HubId = assignedHub!.HubId
             };
         }
 

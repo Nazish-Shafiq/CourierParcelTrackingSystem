@@ -2,9 +2,9 @@ import axiosInstance from './api/axiosInstance'
 import { API_PATHS } from './api/apiConfig'
 import { getResponseData } from './api/baseResponse'
 
-export async function getParcelAssignments({ page = 1, pageSize = 10, signal } = {}) {
+export async function getParcelAssignments({ page = 1, pageSize = 10, activeOnly, signal } = {}) {
   const response = await axiosInstance.get(API_PATHS.parcelAssignments, {
-    params: { page, pageSize },
+    params: { page, pageSize, activeOnly },
     signal,
   })
   return getResponseData(response.data)

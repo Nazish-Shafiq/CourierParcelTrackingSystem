@@ -12,6 +12,7 @@ import {
   Truck,
   Users,
   Warehouse,
+  ArrowRightLeft,
 } from "lucide-react";
 import { hasAnyRole, normalizeRoleName } from "../utils/roleAccess.js";
 
@@ -93,6 +94,7 @@ export const ROLE_NAVIGATION = {
     { label: "Routes", path: "/dispatch/routes", icon: Route },
     { label: "Couriers", path: "/dispatch/couriers", icon: Truck },
     { label: "Hubs", path: "/dispatch/hubs", icon: Warehouse },
+    { label: "Hub Transfers", path: "/dispatch/hub-transfers", icon: ArrowRightLeft },
     { label: "Tracking", path: "/dispatch/tracking", icon: MapPinned },
   ],
   [ROLE_NAMES.COURIER]: [

@@ -1,64 +1,47 @@
-
-/* =========================================================
-   COURIER PARCEL TRACKING SYSTEM
-   MIDNIGHT NAVY & TEAL THEME
-   ========================================================= */
-
 :root {
-  /* Typography */
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #F4F7FC;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Brand colors */
-  --color-brand: #25B8A6;
-  --color-brand-dark: #159687;
-  --color-brand-light: #183F46;
-  --color-brand-hover: #36CCB8;
+  --color-brand: #2563EB;
+  --color-brand-dark: #1D4ED8;
+  --color-brand-light: #DBEAFE;
+  --color-brand-hover: #1D4ED8;
 
-  /* Main backgrounds */
-  --color-page: #101D2B;
-  --color-background: #101D2B;
-  --color-sidebar: #0B1622;
-  --color-navbar: #172839;
+  --color-page: #F4F7FC;
+  --color-background: #F4F7FC;
+  --color-sidebar: #FFFFFF;
+  --color-navbar: #FFFFFF;
 
-  /* Surface colors */
-  --color-surface: #1C3041;
-  --color-surface-subtle: #172839;
-  --color-surface-hover: #253D50;
-  --color-surface-elevated: #22394B;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F8FAFC;
+  --color-surface-hover: #EFF6FF;
+  --color-surface-elevated: #FFFFFF;
 
-  /* Text colors */
-  --color-text: #F1F5F9;
-  --color-text-primary: #F1F5F9;
-  --color-muted: #A8B7C5;
-  --color-text-secondary: #A8B7C5;
-  --color-text-inverse: #08231F;
+  --color-heading: #172554;
+  --color-text: #172033;
+  --color-text-primary: #172033;
+  --color-muted: #64748B;
+  --color-text-secondary: #64748B;
+  --color-text-inverse: #FFFFFF;
 
-  /* Borders */
-  --color-border: #34495A;
-  --color-border-strong: #496174;
+  --color-border: #E2E8F0;
+  --color-border-strong: #CBD5E1;
 
-  /* Status colors */
-  --color-success: #36C98F;
-  --color-success-bg: #153D35;
+  --color-success: #16A36A;
+  --color-success-bg: #ECFDF3;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFF7ED;
+  --color-info: #2563EB;
+  --color-info-bg: #EAF1FF;
+  --color-danger: #DC3545;
+  --color-danger-bg: #FFF1F2;
+  --color-neutral: #64748B;
 
-  --color-warning: #F5B942;
-  --color-warning-bg: #44361E;
-
-  --color-info: #61A9F5;
-  --color-info-bg: #1B3855;
-
-  --color-danger: #F07878;
-  --color-danger-bg: #482B32;
-
-  --color-neutral: #A8B7C5;
-
-  /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -66,25 +49,16 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  /* Shape */
   --border-radius: 0.75rem;
   --border-radius-sm: 0.5rem;
   --border-radius-lg: 1rem;
-
-  /* Shadows */
-  --shadow-card: 0 0.75rem 2rem rgb(0 0 0 / 20%);
-  --shadow-dropdown: 0 0.5rem 1.5rem rgb(0 0 0 / 30%);
-
-  /* Focus */
-  --focus-ring: 0 0 0 3px rgb(37 184 166 / 30%);
+  --shadow-card: 0 0.5rem 1.5rem rgb(23 37 84 / 8%);
+  --shadow-dropdown: 0 0.75rem 1.75rem rgb(23 37 84 / 14%);
+  --focus-ring: 0 0 0 3px rgb(37 99 235 / 16%);
 }
 
-/* =========================================================
-   GLOBAL ELEMENTS
-   ========================================================= */
-
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -101,7 +75,7 @@ a {
 }
 
 a:hover {
-  color: var(--color-brand-hover);
+  color: var(--color-brand-dark);
 }
 
 button,
@@ -113,33 +87,120 @@ textarea {
 
 ::selection {
   color: #FFFFFF;
-  background: var(--color-brand-dark);
+  background: var(--color-brand);
 }
 
-/* =========================================================
-   APP BRAND
-   ========================================================= */
+.form-control,
+.form-select,
+.input-group-text {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background-color: #FFFFFF;
+}
+
+.form-control::placeholder {
+  color: var(--color-muted);
+  opacity: 0.85;
+}
+
+.form-control:focus,
+.form-select:focus {
+  color: var(--color-text);
+  border-color: var(--color-brand);
+  background-color: #FFFFFF;
+  box-shadow: var(--focus-ring);
+}
+
+.form-check-input {
+  border-color: var(--color-border-strong);
+  background-color: #FFFFFF;
+}
+
+.form-check-input:checked {
+  border-color: var(--color-brand);
+  background-color: var(--color-brand);
+}
+
+.dropdown-menu,
+.modal-content {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: #FFFFFF;
+  box-shadow: var(--shadow-dropdown);
+}
+
+.dropdown-item {
+  color: var(--color-text);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: var(--color-heading);
+  background: var(--color-surface-hover);
+}
+
+.alert {
+  border-color: var(--color-border);
+  background: #FFFFFF;
+  color: var(--color-text);
+}
+
+.alert-success {
+  border-color: #BBF7D0;
+  background: var(--color-success-bg);
+  color: #166534;
+}
+
+.alert-warning {
+  border-color: #FED7AA;
+  background: var(--color-warning-bg);
+  color: #9A5200;
+}
+
+.alert-info {
+  border-color: #BFDBFE;
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.alert-danger {
+  border-color: #FECDD3;
+  background: var(--color-danger-bg);
+  color: #B42318;
+}
+
+.btn-primary,
+.login-submit {
+  color: #FFFFFF;
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.login-submit:hover,
+.login-submit:focus {
+  color: #FFFFFF;
+  border-color: var(--color-brand-dark);
+  background: var(--color-brand-dark);
+}
 
 .app-brand {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-text);
+  color: var(--color-heading);
   font-weight: 700;
   text-decoration: none;
 }
 
 .app-brand:hover {
-  color: var(--color-text);
+  color: var(--color-heading);
 }
 
 .app-brand svg {
   color: var(--color-brand);
 }
-
-/* =========================================================
-   WELCOME PANEL
-   ========================================================= */
 
 .welcome-panel {
   max-width: 46rem;
@@ -151,25 +212,17 @@ textarea {
 }
 
 .welcome-panel h1 {
-  color: var(--color-text);
+  color: var(--color-heading);
 }
 
-/* =========================================================
-   ACCESSIBILITY
-   ========================================================= */
-
 :focus-visible {
-  outline: 3px solid rgb(37 184 166 / 65%);
+  outline: 3px solid rgb(37 99 235 / 35%);
   outline-offset: 2px;
 }
 
-/* =========================================================
-   SCROLLBAR
-   ========================================================= */
-
 * {
   scrollbar-width: thin;
-  scrollbar-color: #496174 #101D2B;
+  scrollbar-color: #CBD5E1 #F4F7FC;
 }
 
 *::-webkit-scrollbar {
@@ -178,14 +231,14 @@ textarea {
 }
 
 *::-webkit-scrollbar-track {
-  background: #101D2B;
+  background: #F4F7FC;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #496174;
+  background: #CBD5E1;
   border-radius: 10px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #25B8A6;
+  background: #94A3B8;
 }

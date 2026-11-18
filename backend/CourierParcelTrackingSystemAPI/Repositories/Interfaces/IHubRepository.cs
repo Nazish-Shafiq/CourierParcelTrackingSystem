@@ -9,7 +9,8 @@ public interface IHubRepository
     // Get hubs with pagination and optional search.
     Task<PagedResponseDto<Hub>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search);
+        string? search,
+        bool? activeOnly = null);
 
     // Get a hub by ID.
     Task<Hub?> GetByIdAsync(int id);

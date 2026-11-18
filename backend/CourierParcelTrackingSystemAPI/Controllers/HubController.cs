@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
 [ApiController]
 [Route("api/hubs")]
 public class HubController : ControllerBase
@@ -27,9 +27,10 @@ public class HubController : ControllerBase
         StatusCodes.Status200OK)]
     public async Task<IActionResult> GetHubs(
         [FromQuery] PaginationRequestDto pagination,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] bool? activeOnly)
     {
-        var result = await _service.GetPagedAsync(pagination, search);
+        var result = await _service.GetPagedAsync(pagination, search, activeOnly);
 
         return Ok(
             ApiResponse<PagedResponseDto<HubResponseDto>>.Ok(

@@ -2,8 +2,16 @@ import '../../style/components/components.css'
 
 const STATUS_TONES = {
   BOOKED: 'info',
+  PICKED_UP: 'info',
+  AT_ORIGIN_HUB: 'neutral',
+  AT_DESTINATION_HUB: 'info',
+  OUT_FOR_DELIVERY: 'warning',
+  DELIVERY_ATTEMPTED: 'danger',
   DELIVERED: 'success',
   IN_TRANSIT: 'info',
+  ON_HOLD: 'warning',
+  RETURNED: 'neutral',
+  CANCELLED: 'danger',
 }
 
 function StatusBadge({ status, tone }) {

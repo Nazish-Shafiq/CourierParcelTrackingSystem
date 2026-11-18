@@ -81,6 +81,9 @@ function getCourierActions(parcel, events) {
   if (statusCode === "PICKED_UP") {
     return [{ label: "Mark in transit", statusCode: "IN_TRANSIT" }];
   }
+  if (statusCode === "IN_TRANSIT") {
+    return [{ label: "Mark at destination hub", statusCode: "AT_DESTINATION_HUB" }];
+  }
   if (statusCode === "AT_DESTINATION_HUB") {
     return [{ label: "Start delivery", statusCode: "OUT_FOR_DELIVERY" }];
   }
@@ -124,6 +127,7 @@ function getStatusActionLabel(statusCode) {
     {
       PICKED_UP: "Picked up",
       IN_TRANSIT: "In transit",
+      AT_DESTINATION_HUB: "At destination hub",
       OUT_FOR_DELIVERY: "Out for delivery",
       DELIVERED: "Delivered",
       DELIVERY_ATTEMPTED: "Delivery attempted",

@@ -29,10 +29,17 @@ function toOptions(records, idField, labelForRecord) {
 }
 
 export async function getRouteFormOptions(signal) {
-  const hubs = await getAllPagedRecords(getHubs, signal)
+  return getActiveHubOptions(signal)
+}
+
+export async function getActiveHubOptions(signal) {
+  const hubs = await getAllPagedRecords(
+    (params) => getHubs({ ...params, activeOnly: true }),
+    signal,
+  )
   return {
     hubs: toOptions(
-      hubs.filter((hub) => hub.isActive),
+      hubs,
       'hubId',
       (hub) => `${hub.hubName} (${hub.hubCode})`,
     ),

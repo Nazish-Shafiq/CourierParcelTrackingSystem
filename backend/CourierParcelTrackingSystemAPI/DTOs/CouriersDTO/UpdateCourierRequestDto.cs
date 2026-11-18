@@ -7,6 +7,8 @@ public class UpdateCourierRequestDto
 {
     public int? UserId { get; set; }
 
+    public int? HubId { get; set; }
+
     [Required]
     [StringLength(150, MinimumLength = 2)]
     public string FullName { get; set; } = string.Empty;

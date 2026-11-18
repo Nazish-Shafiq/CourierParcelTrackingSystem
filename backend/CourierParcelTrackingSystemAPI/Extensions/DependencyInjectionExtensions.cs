@@ -26,6 +26,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IReportsRepository, ReportsRepository>();
         services.AddScoped<ICourierRepository, CourierRepository>(); 
         services.AddScoped<IParcelAssignmentRepository, ParcelAssignmentRepository>();
+        services.AddScoped<IHubTransferRepository, HubTransferRepository>();
 
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ICustomerService, CustomerService>();
@@ -37,9 +38,11 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IParcelBookingService, ParcelBookingService>();
         services.AddScoped<IParcelTrackingService, ParcelTrackingService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ICustomerDashboardService, CustomerDashboardService>();
         services.AddScoped<IReportsService, ReportsService>();
         services.AddScoped<ICourierService, CourierService>();
         services.AddScoped<IParcelAssignmentService, ParcelAssignmentService>();
+        services.AddScoped<IHubTransferService, HubTransferService>();
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         return services;

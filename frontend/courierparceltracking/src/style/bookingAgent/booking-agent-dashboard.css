@@ -1,5 +1,5 @@
 .role-dashboard--booking-agent {
-  --dashboard-accent: #7f56d9;
+  --dashboard-accent: var(--color-brand);
 }
 
 .booking-agent-page {
@@ -11,10 +11,10 @@
 
 .booking-agent-form-card,
 .booking-agent-list-card {
-  background: #fff;
-  border: 1px solid #e7e7ef;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
   padding: 1.5rem;
 }
 
@@ -33,12 +33,12 @@
 }
 
 .booking-agent-form__section {
-  border-top: 1px solid #eef1f6;
+  border-top: 1px solid var(--color-border);
   padding-top: 1rem;
 }
 
 .booking-agent-form__section h3 {
-  color: #1f2937;
+  color: var(--color-text);
   font-size: 1rem;
   margin: 0 0 1rem;
 }
@@ -62,8 +62,8 @@
 }
 
 .booking-agent-confirmation {
-  background: linear-gradient(135deg, #f4f3ff, #f3fbf8);
-  border: 1px solid #d7d4ff;
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
   padding: 1.5rem;
 }
@@ -92,7 +92,7 @@
 }
 
 .booking-agent-confirmation__details dt {
-  color: #475467;
+  color: var(--color-muted);
   font-weight: 600;
 }
 
@@ -108,10 +108,10 @@
 
 .booking-agent-quick-link {
   align-items: center;
-  background: #f7f7fb;
-  border: 1px solid #e7e7ef;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
-  color: #172033;
+  color: var(--color-text);
   display: inline-flex;
   gap: 0.75rem;
   padding: 0.8rem 0.9rem;
@@ -120,16 +120,16 @@
 }
 
 .booking-agent-quick-link:hover {
-  border-color: #c9b9ff;
-  box-shadow: 0 10px 20px rgba(102, 66, 196, 0.12);
+  border-color: var(--color-brand-hover);
+  box-shadow: 0 0.6rem 1.25rem rgb(23 37 84 / 8%);
   text-decoration: none;
 }
 
 .booking-agent-quick-link__icon {
   align-items: center;
-  background: #efe8ff;
+  background: var(--color-info-bg);
   border-radius: 10px;
-  color: #5b38d8;
+  color: var(--color-brand);
   display: inline-flex;
   height: 2rem;
   justify-content: center;
@@ -143,8 +143,8 @@
 }
 
 .booking-agent-summary-grid div {
-  background: #f8fafc;
-  border: 1px solid #e7e7ef;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   display: flex;
   flex-direction: column;
@@ -153,7 +153,7 @@
 }
 
 .booking-agent-summary-grid span {
-  color: #52607a;
+  color: var(--color-muted);
   font-size: 0.85rem;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .booking-agent-timeline__marker {
-  background: linear-gradient(180deg, #6843e0, #6dc5a2);
+  background: linear-gradient(180deg, var(--color-brand), var(--color-success));
   border-radius: 999px;
   height: 100%;
   min-height: 12px;
@@ -190,8 +190,8 @@
 }
 
 .booking-agent-timeline__content {
-  background: #f8f9ff;
-  border: 1px solid #ecedf7;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 0.9rem 1rem;
 }
@@ -205,10 +205,10 @@
 }
 
 .booking-agent-success-banner {
-  background: #edfdf4;
-  border: 1px solid #b8ebcf;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success);
   border-radius: 12px;
-  color: #14532d;
+  color: var(--color-success);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

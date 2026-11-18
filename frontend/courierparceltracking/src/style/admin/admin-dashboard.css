@@ -1,5 +1,5 @@
 .role-dashboard--admin {
-  --dashboard-accent: #155eef;
+  --dashboard-accent: var(--color-brand);
 }
 
 .admin-quick-links {
@@ -25,9 +25,9 @@
 }
 
 .admin-quick-link:hover {
-  border-color: #b2ccff;
+  border-color: var(--color-brand-hover);
   color: var(--color-brand);
-  background: #f8faff;
+  background: var(--color-surface-hover);
 }
 
 .admin-quick-link__icon {
@@ -37,6 +37,6 @@
   flex: 0 0 auto;
   color: var(--color-brand);
   border-radius: 0.55rem;
-  background: #eef4ff;
+  background: var(--color-info-bg);
   place-items: center;
 }

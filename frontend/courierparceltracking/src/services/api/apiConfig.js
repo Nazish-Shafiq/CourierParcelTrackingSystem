@@ -14,9 +14,11 @@ export const API_PATHS = Object.freeze({
   parcelStatuses: '/ParcelStatus',
   parcelBookings: '/ParcelBooking',
   parcelAssignments: '/parcel-assignments',
+  hubTransfers: '/hub-transfers',
   parcelTracking: '/parcel-tracking',
   routes: '/Route',
   dashboard: '/dashboard',
+  customerDashboard: '/customer-dashboard',
   reports: '/reports',
 })
 

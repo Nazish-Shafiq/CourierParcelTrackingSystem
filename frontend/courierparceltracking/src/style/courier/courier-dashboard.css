@@ -1,3 +1,3 @@
 .role-dashboard--courier {
-  --dashboard-accent: #039855;
+  --dashboard-accent: var(--color-brand);
 }

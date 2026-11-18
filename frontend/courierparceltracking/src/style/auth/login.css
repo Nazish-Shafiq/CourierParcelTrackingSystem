@@ -4,7 +4,7 @@
   padding: var(--space-6);
   place-items: center;
   background:
-    radial-gradient(ellipse at 10% 10%, rgb(21 94 239 / 10%), transparent 34rem),
+    radial-gradient(ellipse at 10% 10%, rgb(37 99 235 / 8%), transparent 34rem),
     var(--color-page);
 }
 
@@ -64,7 +64,7 @@
 .login-card .input-group-text {
   color: var(--color-muted);
   border-color: var(--color-border);
-  background: #f9fafb;
+  background: var(--color-surface-subtle);
 }
 
 .login-card .form-control {

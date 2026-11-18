@@ -22,15 +22,16 @@ public class CourierController : ControllerBase
 
     // Get all couriers with pagination and optional search.
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Dispatcher")]
     [ProducesResponseType(
         typeof(ApiResponse<PagedResponseDto<CourierResponseDto>>),
         StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCouriers(
         [FromQuery] PaginationRequestDto pagination,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] bool? isAvailable)
     {
-        var result = await _service.GetPagedAsync(pagination, search);
+        var result = await _service.GetPagedAsync(pagination, search, isAvailable);
 
         return Ok(
             ApiResponse<PagedResponseDto<CourierResponseDto>>.Ok(
@@ -46,9 +47,17 @@ public class CourierController : ControllerBase
     [ProducesResponseType(
         typeof(ApiResponse<List<CourierDispatchOptionDto>>),
         StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDispatchOptions()
+    public async Task<IActionResult> GetDispatchOptions(
+        [FromQuery] long parcelId)
     {
-        var result = await _service.GetDispatchOptionsAsync();
+        if (parcelId <= 0)
+        {
+            return BadRequest(
+                ApiResponse<List<CourierDispatchOptionDto>>.Fail(
+                    "A valid parcelId is required to load eligible couriers."));
+        }
+
+        var result = await _service.GetDispatchOptionsAsync(parcelId);
 
         return Ok(
             ApiResponse<List<CourierDispatchOptionDto>>.Ok(

@@ -22,6 +22,7 @@ public class DashboardController : ControllerBase
 
     // GET: api/dashboard/admin
     [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ApiResponse<AdminDashboardResponseDto>>> GetAdminDashboard()
     {
         var result = await _dashboardService.GetAdminDashboardAsync();
@@ -34,6 +35,7 @@ public class DashboardController : ControllerBase
 
     // GET: api/dashboard/dispatcher
     [HttpGet("dispatcher")]
+    [Authorize(Roles = "Dispatcher")]
     public async Task<ActionResult<ApiResponse<DispatcherDashboardResponseDto>>> GetDispatcherDashboard()
     {
         var result = await _dashboardService.GetDispatcherDashboardAsync();

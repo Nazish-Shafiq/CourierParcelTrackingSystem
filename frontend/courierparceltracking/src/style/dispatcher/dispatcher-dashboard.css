@@ -1,5 +1,5 @@
 .role-dashboard--dispatcher {
-  --dashboard-accent: #1570ef;
+  --dashboard-accent: var(--color-brand);
 }
 
 .dispatcher-quick-links {
@@ -22,16 +22,16 @@
 }
 
 .dispatcher-quick-link:hover {
-  border-color: #b2ccff;
-  box-shadow: 0 0.35rem 1rem rgb(16 24 40 / 8%);
+  border-color: #BFDBFE;
+  box-shadow: 0 0.35rem 1rem rgb(23 37 84 / 8%);
   transform: translateY(-1px);
 }
 
 .dispatcher-quick-link__icon {
   align-items: center;
-  background: #eff8ff;
+  background: #EAF1FF;
   border-radius: 0.6rem;
-  color: #1570ef;
+  color: var(--color-brand);
   display: inline-flex;
   height: 2rem;
   justify-content: center;

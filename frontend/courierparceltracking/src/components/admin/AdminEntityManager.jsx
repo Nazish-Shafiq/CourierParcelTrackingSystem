@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import Button from "../common/Button";
 import EmptyState from "../common/EmptyState";
@@ -98,6 +99,7 @@ function formatDetailValue(value) {
 }
 
 function AdminEntityManager({ config }) {
+  const [searchParams] = useSearchParams();
   const formId = useId();
   const formController = useRef(null);
   const detailsController = useRef(null);
@@ -223,12 +225,18 @@ function AdminEntityManager({ config }) {
   ]);
 
   const filteredRecords = useMemo(() => {
-    if (!config.clientSide || !search.trim()) return records;
+    let result = records;
+    if (config.filterRecord) {
+      result = result.filter((record) =>
+        config.filterRecord(record, searchParams),
+      );
+    }
+    if (!config.clientSide || !search.trim()) return result;
     const query = search.trim().toLowerCase();
-    return records.filter((record) =>
+    return result.filter((record) =>
       getSearchValue(record, config.searchFields).includes(query),
     );
-  }, [config.clientSide, config.searchFields, records, search]);
+  }, [config, records, search, searchParams]);
 
   const totalRecords = config.clientSide
     ? filteredRecords.length

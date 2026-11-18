@@ -18,13 +18,21 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
 
     // Get all assignment records with pagination.
     public async Task<PagedResponseDto<ParcelAssignment>> GetPagedAsync(
-        PaginationRequestDto request)
+        PaginationRequestDto request,
+        bool? activeOnly)
     {
-        var query = _context.ParcelAssignments
+        IQueryable<ParcelAssignment> query = _context.ParcelAssignments
             .AsNoTracking()
             .Include(a => a.Parcel)
-            .Include(a => a.Courier)
-            .OrderByDescending(a => a.AssignedAt);
+            .Include(a => a.Courier);
+
+        if (activeOnly == true)
+            query = query.Where(a =>
+                a.UnassignedAt == null &&
+                a.Parcel.IsActive &&
+                !a.Parcel.IsDeleted);
+
+        query = query.OrderByDescending(a => a.AssignedAt);
 
         var totalRecords = await query.CountAsync();
 
@@ -50,7 +58,16 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
         return await _context.ParcelAssignments
             .Include(a => a.Parcel)
             .ThenInclude(p => p.CurrentStatus)
+            .Include(a => a.Parcel)
+            .ThenInclude(p => p.CurrentHub)
+            .Include(a => a.Parcel)
+            .ThenInclude(p => p.Route)
+            .ThenInclude(r => r!.OriginHub)
+            .Include(a => a.Parcel)
+            .ThenInclude(p => p.Route)
+            .ThenInclude(r => r!.DestinationHub)
             .Include(a => a.Courier)
+            .ThenInclude(c => c.Hub)
             .Include(a => a.AssignedByNavigation)
             .Include(a => a.UnassignedByNavigation)
             .FirstOrDefaultAsync(a =>
@@ -74,6 +91,11 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
     {
         return await _context.Parcels
             .Include(p => p.CurrentStatus)
+            .Include(p => p.CurrentHub)
+            .Include(p => p.Route)
+            .ThenInclude(r => r!.OriginHub)
+            .Include(p => p.Route)
+            .ThenInclude(r => r!.DestinationHub)
             .FirstOrDefaultAsync(p =>
                 p.ParcelId == parcelId &&
                 p.IsActive &&
@@ -84,6 +106,7 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
     public async Task<Courier?> GetCourierForAssignmentAsync(int courierId)
     {
         return await _context.Couriers
+            .Include(c => c.Hub)
             .FirstOrDefaultAsync(c =>
                 c.CourierId == courierId &&
                 c.IsActive &&

@@ -7,6 +7,10 @@ public class CourierResponseDto
 
     public int? UserId { get; set; }
 
+    public int? HubId { get; set; }
+
+    public string? HubName { get; set; }
+
     public string EmployeeCode { get; set; } = string.Empty;
 
     public string FullName { get; set; } = string.Empty;

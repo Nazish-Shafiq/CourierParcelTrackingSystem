@@ -22,6 +22,7 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<Courier> Couriers { get; set; }
     public virtual DbSet<Customer> Customers { get; set; }
     public virtual DbSet<Hub> Hubs { get; set; }
+    public virtual DbSet<HubTransfer> HubTransfers { get; set; }
     public virtual DbSet<Parcel> Parcels { get; set; }
     public virtual DbSet<ParcelAssignment> ParcelAssignments { get; set; }
     public virtual DbSet<ParcelRecipient> ParcelRecipients { get; set; }
@@ -183,6 +184,8 @@ public partial class ApplicationDbContext : DbContext
                 .IsUnique()
                 .HasFilter("([UserId] IS NOT NULL)");
 
+            entity.HasIndex(e => e.HubId, "IX_Couriers_HubId");
+
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysutcdatetime())");
@@ -208,6 +211,10 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.CourierUser)
                 .HasForeignKey<Courier>(d => d.UserId)
                 .HasConstraintName("FK_Couriers_User");
+
+            entity.HasOne(d => d.Hub).WithMany(p => p.Couriers)
+                .HasForeignKey(d => d.HubId)
+                .HasConstraintName("FK_Couriers_Hubs");
         });
 
         modelBuilder.Entity<Customer>(entity =>
@@ -319,6 +326,10 @@ public partial class ApplicationDbContext : DbContext
                 .HasForeignKey(d => d.RouteId)
                 .HasConstraintName("FK_Parcels_Route");
 
+            entity.HasOne(d => d.CurrentHub).WithMany(p => p.CurrentHubParcels)
+                .HasForeignKey(d => d.CurrentHubId)
+                .HasConstraintName("FK_Parcels_CurrentHub");
+
             entity.HasOne(d => d.SenderCustomer).WithMany(p => p.Parcels)
                 .HasForeignKey(d => d.SenderCustomerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -327,6 +338,39 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.ParcelUpdatedByNavigations)
                 .HasForeignKey(d => d.UpdatedBy)
                 .HasConstraintName("FK_Parcels_UpdatedBy");
+        });
+
+        modelBuilder.Entity<HubTransfer>(entity =>
+        {
+            entity.HasIndex(e => new { e.ParcelId, e.Status, e.IsDeleted }, "IX_HubTransfers_Parcel_Status");
+            entity.HasIndex(e => new { e.DestinationHubId, e.Status }, "IX_HubTransfers_DestinationHub");
+            entity.Property(e => e.Status).HasMaxLength(30).HasDefaultValue("IN_TRANSIT");
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.TransferredAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.ArrivedAt).HasPrecision(0);
+            entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            entity.HasOne(d => d.Parcel).WithMany(p => p.HubTransfers)
+                .HasForeignKey(d => d.ParcelId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_HubTransfers_Parcel");
+            entity.HasOne(d => d.SourceHub).WithMany(p => p.SourceHubTransfers)
+                .HasForeignKey(d => d.SourceHubId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_HubTransfers_SourceHub");
+            entity.HasOne(d => d.DestinationHub).WithMany(p => p.DestinationHubTransfers)
+                .HasForeignKey(d => d.DestinationHubId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_HubTransfers_DestinationHub");
+            entity.HasOne(d => d.CreatedByNavigation).WithMany()
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_HubTransfers_CreatedBy");
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany()
+                .HasForeignKey(d => d.UpdatedBy)
+                .HasConstraintName("FK_HubTransfers_UpdatedBy");
         });
 
         // Parcel Assignment configuration.

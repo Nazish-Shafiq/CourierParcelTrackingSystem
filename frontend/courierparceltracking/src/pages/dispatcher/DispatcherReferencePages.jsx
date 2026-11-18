@@ -50,6 +50,7 @@ function DispatcherCouriersPage() {
         courier.employeeCode,
         courier.fullName,
         courier.vehicleType,
+        courier.hubName,
       ].filter(Boolean).join(' ').toLowerCase()
 
       return matchesAvailability && (!query || searchable.includes(query))
@@ -80,7 +81,7 @@ function DispatcherCouriersPage() {
                 setSearch(value)
                 setCurrentPage(1)
               }}
-              placeholder="Name, employee code, or vehicle type"
+              placeholder="Name, employee code, vehicle type, or hub"
               value={search}
             />
             <label className="dispatcher-filter-field">
@@ -109,6 +110,7 @@ function DispatcherCouriersPage() {
               columns={[
                 { key: 'employeeCode', header: 'Employee code' },
                 { key: 'fullName', header: 'Name' },
+                { key: 'hubName', header: 'Assigned hub', render: (row) => row.hubName || '—' },
                 { key: 'vehicleType', header: 'Vehicle', render: (row) => row.vehicleType || '—' },
                 {
                   key: 'availability',
@@ -168,7 +170,7 @@ function DispatcherHubsPage() {
     <div className="role-dashboard role-dashboard--dispatcher">
       <PageHeader
         actions={<RefreshButton isLoading={hubs.isLoading} onRefresh={hubs.refresh} />}
-        description="Review active and inactive hubs. Parcel transfers between hubs are not supported by the current API."
+        description="Review active and inactive hubs for parcel transfer destinations."
         eyebrow="Dispatch resources"
         title="Hubs"
       />

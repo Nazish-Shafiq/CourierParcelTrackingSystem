@@ -9,6 +9,8 @@ public partial class Courier
 
     public int? UserId { get; set; }
 
+    public int? HubId { get; set; }
+
     public string EmployeeCode { get; set; } = null!;
 
     public string FullName { get; set; } = null!;
@@ -40,6 +42,8 @@ public partial class Courier
     public virtual ICollection<ParcelAssignment> ParcelAssignments { get; set; } = new List<ParcelAssignment>();
 
     public virtual ICollection<StatusEvent> StatusEvents { get; set; } = new List<StatusEvent>();
+
+    public virtual Hub? Hub { get; set; }
 
     public virtual User? UpdatedByNavigation { get; set; }
 

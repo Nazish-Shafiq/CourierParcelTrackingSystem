@@ -9,8 +9,9 @@ public interface ICourierService
     // Get couriers with pagination and search.
     Task<PagedResponseDto<CourierResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search);
-    Task<List<CourierDispatchOptionDto>> GetDispatchOptionsAsync();
+        string? search,
+        bool? isAvailable);
+    Task<List<CourierDispatchOptionDto>> GetDispatchOptionsAsync(long parcelId);
     // Get courier by ID.
     Task<CourierResponseDto?> GetByIdAsync(int id);
 

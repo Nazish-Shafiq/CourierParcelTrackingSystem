@@ -11,7 +11,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/parcel-tracking")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
 public class ParcelTrackingController : ControllerBase
 {
     private readonly IParcelTrackingService _service;

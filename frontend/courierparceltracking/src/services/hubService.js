@@ -2,9 +2,15 @@ import axiosInstance from './api/axiosInstance'
 import { API_PATHS } from './api/apiConfig'
 import { getResponseData } from './api/baseResponse'
 
-export async function getHubs({ page = 1, pageSize = 10, search, signal } = {}) {
+export async function getHubs({
+  page = 1,
+  pageSize = 10,
+  search,
+  activeOnly,
+  signal,
+} = {}) {
   const response = await axiosInstance.get(API_PATHS.hubs, {
-    params: { page, pageSize, search },
+    params: { page, pageSize, search, activeOnly },
     signal,
   })
   return getResponseData(response.data)

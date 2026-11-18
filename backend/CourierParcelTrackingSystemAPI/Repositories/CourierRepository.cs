@@ -20,11 +20,16 @@ public class CourierRepository : ICourierRepository
     // Get couriers with pagination and optional search.
     public async Task<PagedResponseDto<Courier>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? isAvailable)
     {
         var query = _context.Couriers
+            .Include(c => c.Hub)
             .AsNoTracking()
-            .Where(c => !c.IsDeleted);
+            .Where(c => c.IsActive && !c.IsDeleted);
+
+        if (isAvailable.HasValue)
+            query = query.Where(c => c.IsAvailable == isAvailable.Value);
 
         // Apply search when a search value is provided.
         if (!string.IsNullOrWhiteSpace(search))
@@ -47,13 +52,18 @@ public class CourierRepository : ICourierRepository
         return await query.ToPagedResponseAsync(pagination);
     }
 
-    public Task<List<Courier>> GetActiveCouriersForDispatchAsync() =>
+    public Task<List<Courier>> GetActiveCouriersForDispatchAsync(int hubId) =>
         _context.Couriers
+            .Include(c => c.Hub)
             .AsNoTracking()
             .Where(c =>
                 c.IsActive &&
                 !c.IsDeleted &&
                 c.IsAvailable &&
+                c.HubId == hubId &&
+                c.Hub != null &&
+                c.Hub.IsActive &&
+                !c.Hub.IsDeleted &&
                 c.UserId.HasValue &&
                 c.User != null &&
                 c.User.IsActive &&
@@ -71,6 +81,7 @@ public class CourierRepository : ICourierRepository
     public async Task<Courier?> GetByIdAsync(int id)
     {
         return await _context.Couriers
+            .Include(c => c.Hub)
             .FirstOrDefaultAsync(c =>
                 c.CourierId == id && !c.IsDeleted);
     }
@@ -120,6 +131,11 @@ public class CourierRepository : ICourierRepository
 
         return query.AnyAsync();
     }
+
+    public Task<bool> HasActiveAssignmentAsync(int courierId) =>
+        _context.ParcelAssignments.AnyAsync(assignment =>
+            assignment.CourierId == courierId &&
+            assignment.UnassignedAt == null);
 
     // Update an existing courier.
     public async Task UpdateAsync(Courier courier)

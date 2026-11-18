@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Admin,Booking Agent")]
 [ApiController]
 [Route("api/customers")]
 public class CustomerController : ControllerBase

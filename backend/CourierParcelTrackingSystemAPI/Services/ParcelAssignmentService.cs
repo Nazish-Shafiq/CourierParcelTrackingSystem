@@ -29,7 +29,7 @@ public class ParcelAssignmentService : IParcelAssignmentService
             throw new KeyNotFoundException(
                 "Parcel not found or inactive.");
 
-        EnsureParcelCanBeAssigned(parcel);
+        ParcelAssignmentHubResolver.EnsureParcelCanBeAssigned(parcel);
 
         if (await _repository.HasActiveAssignmentAsync(request.ParcelId))
             throw new InvalidOperationException(
@@ -41,6 +41,8 @@ public class ParcelAssignmentService : IParcelAssignmentService
         if (courier == null)
             throw new KeyNotFoundException(
                 "Courier not found or inactive.");
+
+        EnsureCourierMatchesOperationalHub(parcel, courier);
 
         if (!courier.IsAvailable)
             throw new InvalidOperationException(
@@ -76,9 +78,9 @@ public class ParcelAssignmentService : IParcelAssignmentService
 
     // Get all assignments with pagination.
     public async Task<PagedResponseDto<ParcelAssignmentResponseDto>>
-        GetPagedAsync(PaginationRequestDto request)
+        GetPagedAsync(PaginationRequestDto request, bool? activeOnly)
     {
-        var result = await _repository.GetPagedAsync(request);
+        var result = await _repository.GetPagedAsync(request, activeOnly);
 
         return new PagedResponseDto<ParcelAssignmentResponseDto>
         {
@@ -137,7 +139,8 @@ public class ParcelAssignmentService : IParcelAssignmentService
             throw new InvalidOperationException(
                 "The parcel information could not be loaded.");
 
-        EnsureParcelCanBeAssigned(currentAssignment.Parcel);
+        ParcelAssignmentHubResolver.EnsureParcelCanBeAssigned(
+            currentAssignment.Parcel);
 
         var newCourier = await _repository.GetCourierForAssignmentAsync(
             request.NewCourierId);
@@ -145,6 +148,10 @@ public class ParcelAssignmentService : IParcelAssignmentService
         if (newCourier == null)
             throw new KeyNotFoundException(
                 "New courier not found or inactive.");
+
+        EnsureCourierMatchesOperationalHub(
+            currentAssignment.Parcel,
+            newCourier);
 
         if (newCourier.CourierId == currentAssignment.CourierId)
             throw new InvalidOperationException(
@@ -239,17 +246,31 @@ public class ParcelAssignmentService : IParcelAssignmentService
         };
     }
 
-    private static void EnsureParcelCanBeAssigned(Parcel parcel)
+    private static void EnsureCourierMatchesOperationalHub(
+        Parcel parcel,
+        Courier courier)
     {
-        if (parcel.DeliveredAt.HasValue ||
-            parcel.CurrentStatus.IsTerminal ||
-            parcel.CurrentStatus.StatusCode.Equals(
-                "DELIVERED",
-                StringComparison.OrdinalIgnoreCase))
+        var operationalHub = ParcelAssignmentHubResolver.ResolveOperationalHub(parcel);
+        if (operationalHub is null ||
+            !operationalHub.IsActive ||
+            operationalHub.IsDeleted)
         {
             throw new InvalidOperationException(
-                "A delivered or terminal parcel cannot be assigned or reassigned.");
+                "The parcel does not have an active operational hub for courier assignment.");
         }
+
+        if (!courier.HubId.HasValue ||
+            courier.Hub is null ||
+            !courier.Hub.IsActive ||
+            courier.Hub.IsDeleted)
+        {
+            throw new InvalidOperationException(
+                "The selected courier must be assigned to an active hub.");
+        }
+
+        if (courier.HubId != operationalHub.HubId)
+            throw new InvalidOperationException(
+                "The selected courier is not assigned to the parcel's operational hub.");
     }
 
     private async Task<DateTime> GetAssignmentTimeAsync(

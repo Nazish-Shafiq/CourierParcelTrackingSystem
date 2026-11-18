@@ -47,7 +47,13 @@ function CourierDashboard() {
               onClick={() => navigate('/courier/assigned-parcels')}
               value={data.totalAssignedParcels}
             />
-            <DashboardStatCard icon={Truck} label="Parcels in transit" value={data.parcelsInTransit} accent="amber" />
+            <DashboardStatCard
+              icon={Truck}
+              label="Parcels in transit"
+              onClick={() => navigate('/courier/assigned-parcels?status=In%20Transit')}
+              value={data.parcelsInTransit}
+              accent="amber"
+            />
             <DashboardStatCard
               icon={MapPin}
               label="Parcels delivered"

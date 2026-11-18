@@ -13,6 +13,8 @@ public partial class Parcel
 
     public int? RouteId { get; set; }
 
+    public int? CurrentHubId { get; set; }
+
     public int CurrentStatusId { get; set; }
 
     public DateTime BookingDate { get; set; }
@@ -51,6 +53,10 @@ public partial class Parcel
     public virtual ParcelRecipient? ParcelRecipient { get; set; }
 
     public virtual Route? Route { get; set; }
+
+    public virtual Hub? CurrentHub { get; set; }
+
+    public virtual ICollection<HubTransfer> HubTransfers { get; set; } = new List<HubTransfer>();
 
     public virtual Customer SenderCustomer { get; set; } = null!;
 

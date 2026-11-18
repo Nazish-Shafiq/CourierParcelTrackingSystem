@@ -12,7 +12,8 @@ public interface IParcelAssignmentService
         int? assignedBy);
 
     Task<PagedResponseDto<ParcelAssignmentResponseDto>> GetPagedAsync(
-        PaginationRequestDto request);
+        PaginationRequestDto request,
+        bool? activeOnly);
 
     Task<ParcelAssignmentResponseDto> GetByIdAsync(long assignmentId);
 

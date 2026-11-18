@@ -41,6 +41,7 @@ import {
 import { getUserById, getUsers } from "../../services/userService";
 import {
   getParcelFormOptions,
+  getActiveHubOptions,
   getRouteFormOptions,
 } from "../../services/adminLookupService";
 
@@ -59,6 +60,12 @@ export const usersConfig = {
   description: "View active user accounts and their assigned role names.",
   clientSide: true,
   list: ({ signal }) => getUsers(signal),
+  filterRecord: (user, searchParams) => {
+    const role = searchParams.get("role");
+    return !role || user.roles?.some(
+      (userRole) => userRole.toLowerCase() === role.toLowerCase(),
+    );
+  },
   getById: getUserById,
   idField: "userId",
   searchFields: ["userName", "fullName", "email", "phone", "roles"],
@@ -172,7 +179,21 @@ export const couriersConfig = {
   singular: "courier",
   description: "Manage Courier profiles and availability.",
   paged: true,
-  list: getCouriers,
+  list: ({ page, pageSize, search, signal }) => {
+    const availability = new URLSearchParams(window.location.search).get("availability");
+    return getCouriers({
+      page,
+      pageSize,
+      search,
+      isAvailable: availability === "available"
+        ? true
+        : availability === "busy"
+          ? false
+          : undefined,
+      signal,
+    });
+  },
+  loadFormOptions: getActiveHubOptions,
   getById: getCourierById,
   update: updateCourier,
   remove: deleteCourier,
@@ -181,6 +202,7 @@ export const couriersConfig = {
   columns: [
     { key: "employeeCode", header: "Employee code" },
     { key: "fullName", header: "Full name" },
+    { key: "hubName", header: "Assigned hub", render: (courier) => courier.hubName || "—" },
     { key: "phone", header: "Phone" },
     { key: "vehicleType", header: "Vehicle" },
     {
@@ -195,6 +217,15 @@ export const couriersConfig = {
     },
   ],
   fields: [
+    {
+      name: "hubId",
+      label: "Assigned hub",
+      type: "select",
+      required: true,
+      numeric: true,
+      optionsKey: "hubs",
+      placeholder: "Select a hub",
+    },
     {
       name: "fullName",
       label: "Full name",
@@ -239,6 +270,7 @@ export const couriersConfig = {
   ],
   detailFields: [
     { key: "employeeCode", label: "Employee code" },
+    { key: "hubName", label: "Assigned hub" },
     { key: "fullName", label: "Full name" },
     { key: "userId", label: "Linked user ID" },
     { key: "phone", label: "Phone" },
@@ -504,6 +536,11 @@ export const parcelsConfig = {
   idField: "parcelId",
   getDisplayName: (parcel) => parcel.trackingNumber,
   searchFields: ["trackingNumber", "senderName", "routeName", "currentStatus"],
+  filterRecord: (parcel, searchParams) => {
+    const status = searchParams.get("status");
+    return !status || String(parcel.currentStatus).toLowerCase()
+      === status.toLowerCase();
+  },
   columns: [
     { key: "trackingNumber", header: "Tracking number" },
     { key: "senderName", header: "Sender" },

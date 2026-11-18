@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(16 24 40 / 55%);
+  background: rgb(23 37 84 / 32%);
 }
 
 .confirm-dialog {
@@ -16,7 +16,7 @@
   border: 1px solid var(--color-border);
   border-radius: 0.9rem;
   background: var(--color-surface);
-  box-shadow: 0 1.5rem 4rem rgb(16 24 40 / 20%);
+  box-shadow: var(--shadow-dropdown);
 }
 
 .confirm-dialog__title {

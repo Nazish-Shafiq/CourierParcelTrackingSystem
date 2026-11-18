@@ -1,5 +1,6 @@
 import AdminEntityManager from '../../components/admin/AdminEntityManager'
 import { getStaffRoles, registerStaff } from '../../services/authService'
+import { getActiveHubOptions } from '../../services/adminLookupService'
 import {
   couriersConfig,
   customersConfig,
@@ -11,16 +12,20 @@ import {
 } from './adminResourceConfigs'
 
 async function loadStaffRegistrationOptions(signal) {
-  const staffRoles = await getStaffRoles(signal)
+  const [staffRoles, hubOptions] = await Promise.all([
+    getStaffRoles(signal),
+    getActiveHubOptions(signal),
+  ])
   if (!staffRoles.length) {
     throw new Error('No active staff roles are available for registration.')
   }
-  return { staffRoles }
+  return { staffRoles, ...hubOptions }
 }
 
 function isCourierRoleSelected(values, options) {
   return options.staffRoles?.some(
-    (role) => String(role.value) === String(values.roleId) && role.label === 'Courier',
+    (role) => String(role.value) === String(values.roleId)
+      && role.label.toLowerCase() === 'courier',
   ) ?? false
 }
 
@@ -51,6 +56,16 @@ const staffUsersConfig = {
       integer: true,
       numeric: true,
       optionsKey: 'staffRoles',
+    },
+    {
+      name: 'hubId',
+      label: 'Assigned hub',
+      type: 'select',
+      numeric: true,
+      optionsKey: 'hubs',
+      placeholder: 'Select a hub',
+      visibleWhen: isCourierRoleSelected,
+      requiredWhen: isCourierRoleSelected,
     },
     {
       name: 'vehicleType',

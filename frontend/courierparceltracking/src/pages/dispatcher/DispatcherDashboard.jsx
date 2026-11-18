@@ -57,7 +57,7 @@ function DispatcherDashboard() {
               accent="violet"
               icon={ClipboardList}
               label="Active assignments"
-              onClick={() => navigate('/dispatch/assignments')}
+              onClick={() => navigate('/dispatch/assignments?active=true')}
               value={data.activeAssignments}
             />
             <DashboardStatCard
@@ -140,13 +140,15 @@ function DispatcherDashboard() {
           </DashboardSection>
 
           <DashboardSection
-            description="The current API does not expose hub-transfer endpoints or transfer history."
-            title="Hub transfers unavailable"
+            description="Create transfers and confirm parcel arrival at destination hubs."
+            title="Hub transfers"
           >
-            <p className="dispatcher-dashboard__notice">
-              Hub transfer management is not available in this phase because the backend has no
-              supported transfer operations.
-            </p>
+            <Link className="dispatcher-quick-link" to="/dispatch/hub-transfers">
+              <span className="dispatcher-quick-link__icon">
+                <Package aria-hidden="true" size={18} />
+              </span>
+              <span>Open hub transfer management</span>
+            </Link>
           </DashboardSection>
         </>
       )}

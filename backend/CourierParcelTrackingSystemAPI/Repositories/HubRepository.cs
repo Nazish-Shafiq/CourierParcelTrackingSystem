@@ -20,11 +20,15 @@ public class HubRepository : IHubRepository
     // Get hubs with pagination and optional search.
     public async Task<PagedResponseDto<Hub>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? activeOnly)
     {
         var query = _context.Hubs
             .AsNoTracking()
             .Where(h => !h.IsDeleted);
+
+        if (activeOnly == true)
+            query = query.Where(h => h.IsActive);
 
         // Apply search when a search value is provided.
         if (!string.IsNullOrWhiteSpace(search))
