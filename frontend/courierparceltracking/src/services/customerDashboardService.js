@@ -28,3 +28,11 @@ export async function getCustomerParcelDetails(parcelId, signal) {
   )
   return getResponseData(response.data)
 }
+
+export async function getCustomerParcelByTrackingNumber(trackingNumber, signal) {
+  const response = await axiosInstance.get(
+    `${API_PATHS.customerDashboard}/track/${encodeURIComponent(trackingNumber)}`,
+    { signal },
+  )
+  return getResponseData(response.data)
+}

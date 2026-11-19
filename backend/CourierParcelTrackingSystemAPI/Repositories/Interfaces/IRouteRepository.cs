@@ -8,7 +8,8 @@ public interface IRouteRepository
 {
     Task<PagedResponseDto<RouteEntity>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search);
+        string? search,
+        bool? isActive);
 
     Task<RouteEntity?> GetByIdAsync(int id);
 

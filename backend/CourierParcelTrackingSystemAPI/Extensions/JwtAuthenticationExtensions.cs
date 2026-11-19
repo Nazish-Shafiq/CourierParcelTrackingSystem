@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using System.Text;
+using CourierParcelTrackingSystem.API.Data;
 using CourierParcelTrackingSystem.API.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CourierParcelTrackingSystem.API.Extensions;
@@ -52,6 +54,53 @@ public static class JwtAuthenticationExtensions
                 ClockSkew = TimeSpan.FromSeconds(30),
                 RoleClaimType = ClaimTypes.Role,
                 NameClaimType = ClaimTypes.Name
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = async context =>
+                {
+                    var userIdClaim = context.Principal?
+                        .FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (!int.TryParse(userIdClaim, out var userId))
+                    {
+                        context.Fail("The access token has no valid user identifier.");
+                        return;
+                    }
+
+                    var dbContext = context.HttpContext.RequestServices
+                        .GetRequiredService<ApplicationDbContext>();
+                    var user = await dbContext.Users
+                        .AsNoTracking()
+                        .Where(user =>
+                        user.UserId == userId &&
+                        user.IsActive &&
+                        !user.IsDeleted)
+                        .Select(user => new
+                        {
+                            RoleNames = user.UserRoleUsers
+                                .Where(userRole =>
+                                    userRole.Role.IsActive &&
+                                    !userRole.Role.IsDeleted)
+                                .Select(userRole => userRole.Role.RoleName)
+                                .Distinct()
+                                .ToList()
+                        })
+                        .FirstOrDefaultAsync();
+                    if (user is null)
+                    {
+                        context.Fail("The user account is inactive.");
+                        return;
+                    }
+
+                    var tokenRoles = context.Principal!
+                        .FindAll(ClaimTypes.Role)
+                        .Select(claim => claim.Value)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var activeRoles = user.RoleNames.ToHashSet(
+                        StringComparer.OrdinalIgnoreCase);
+                    if (!tokenRoles.SetEquals(activeRoles))
+                        context.Fail("The user's role assignments changed. Sign in again.");
+                }
             };
         });
 

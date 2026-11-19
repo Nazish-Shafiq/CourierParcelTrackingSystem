@@ -43,6 +43,8 @@ public interface IParcelTrackingRepository
         long parcelId,
         string statusCode);
 
+    Task<string?> GetStatusCodeBeforeOnHoldAsync(long parcelId);
+
     // Atomically change the parcel status and add its Courier tracking event.
     Task<StatusEvent?> TryApplyCourierStatusTransitionAsync(
         long parcelId,

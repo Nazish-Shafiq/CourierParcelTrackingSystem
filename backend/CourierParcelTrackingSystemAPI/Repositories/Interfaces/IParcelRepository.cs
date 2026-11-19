@@ -14,6 +14,9 @@ public interface IParcelRepository
         string? search,
         string? statusCode);
     Task<Parcel?> GetCustomerParcelDetailsAsync(int userId, long parcelId);
+    Task<Parcel?> GetCustomerParcelByTrackingNumberAsync(
+        int userId,
+        string trackingNumber);
     Task<bool> CustomerExistsAsync(int customerId);
     Task<bool> RouteExistsAsync(int routeId);
     Task<bool> StatusExistsAsync(int statusId);

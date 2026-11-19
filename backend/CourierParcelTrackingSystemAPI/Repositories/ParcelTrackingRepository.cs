@@ -23,12 +23,8 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
         PaginationRequestDto request,
         int? courierUserId = null)
     {
-        IQueryable<StatusEvent> query = _context.StatusEvents
-            .AsNoTracking()
-            .Include(e => e.Parcel)
-            .Include(e => e.ParcelStatus)
-            .Include(e => e.Hub)
-            .Include(e => e.Courier)
+        IQueryable<StatusEvent> query = IncludeTrackingDetails(
+            _context.StatusEvents.AsNoTracking())
             .Where(e => e.Parcel.IsActive && !e.Parcel.IsDeleted);
 
         if (courierUserId.HasValue)
@@ -63,12 +59,7 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
         string trackingNumber,
         int? courierUserId = null)
     {
-        var query = _context.StatusEvents
-            .AsNoTracking()
-            .Include(e => e.Parcel)
-            .Include(e => e.ParcelStatus)
-            .Include(e => e.Hub)
-            .Include(e => e.Courier)
+        var query = IncludeTrackingDetails(_context.StatusEvents.AsNoTracking())
             .Where(e =>
                 e.Parcel.TrackingNumber == trackingNumber &&
                 e.Parcel.IsActive &&
@@ -206,6 +197,31 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<string?> GetStatusCodeBeforeOnHoldAsync(long parcelId)
+    {
+        var latestOnHoldAt = await _context.StatusEvents
+            .Where(e =>
+                e.ParcelId == parcelId &&
+                e.ParcelStatus.StatusCode == "ON_HOLD")
+            .OrderByDescending(e => e.EventAt)
+            .ThenByDescending(e => e.StatusEventId)
+            .Select(e => (DateTime?)e.EventAt)
+            .FirstOrDefaultAsync();
+
+        if (!latestOnHoldAt.HasValue)
+            return null;
+
+        return await _context.StatusEvents
+            .Where(e =>
+                e.ParcelId == parcelId &&
+                e.EventAt < latestOnHoldAt.Value &&
+                e.ParcelStatus.StatusCode != "ON_HOLD")
+            .OrderByDescending(e => e.EventAt)
+            .ThenByDescending(e => e.StatusEventId)
+            .Select(e => e.ParcelStatus.StatusCode)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<StatusEvent?> TryApplyCourierStatusTransitionAsync(
         long parcelId,
         int expectedStatusId,
@@ -335,6 +351,10 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                 {
                     ParcelId = parcelId,
                     ParcelStatusId = targetStatusId,
+                    HubId = await _context.Parcels
+                        .Where(p => p.ParcelId == parcelId)
+                        .Select(p => p.CurrentHubId)
+                        .SingleOrDefaultAsync(),
                     CourierId = courierId,
                     EventAt = eventAt,
                     Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
@@ -354,14 +374,22 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
             }
         }
 
-        return await _context.StatusEvents
-            .AsNoTracking()
-            .Include(e => e.Parcel)
-            .Include(e => e.ParcelStatus)
-            .Include(e => e.Hub)
-            .Include(e => e.Courier)
+        return await IncludeTrackingDetails(_context.StatusEvents.AsNoTracking())
             .SingleAsync(e => e.StatusEventId == statusEventId);
     }
+
+    private static IQueryable<StatusEvent> IncludeTrackingDetails(
+        IQueryable<StatusEvent> query) =>
+        query
+            .Include(e => e.Parcel)
+                .ThenInclude(p => p.Route)
+                    .ThenInclude(r => r!.OriginHub)
+            .Include(e => e.Parcel)
+                .ThenInclude(p => p.Route)
+                    .ThenInclude(r => r!.DestinationHub)
+            .Include(e => e.ParcelStatus)
+            .Include(e => e.Hub)
+            .Include(e => e.Courier);
 
     // Get an active hub.
     public async Task<Hub?> GetActiveHubAsync(int hubId)

@@ -25,6 +25,60 @@ function formatAddress(contact) {
   ].filter(Boolean).join(', ') || '—'
 }
 
+function getTrackingDescription(event, parcel) {
+  const statusCode = event.statusCode?.toUpperCase()
+  const originHub = event.originHubName || parcel.originHubName
+  const destinationHub = event.destinationHubName || parcel.destinationHubName
+  const eventHub = event.hubName
+
+  switch (statusCode) {
+    case 'BOOKED':
+      return originHub
+        ? `Parcel booking created at ${originHub}.`
+        : 'Parcel booking created.'
+    case 'AT_ORIGIN_HUB': {
+      const hub = originHub || eventHub
+      return hub ? `Parcel has arrived at ${hub}.` : 'Parcel is at the origin hub.'
+    }
+    case 'PICKED_UP': {
+      const hub = originHub || eventHub
+      return hub ? `Parcel collected from ${hub}.` : 'Parcel collected.'
+    }
+    case 'IN_TRANSIT':
+      return originHub && destinationHub
+        ? `Parcel is moving from ${originHub} to ${destinationHub}.`
+        : 'Parcel is in transit.'
+    case 'AT_DESTINATION_HUB': {
+      const hub = destinationHub || eventHub
+      return hub
+        ? `Parcel has arrived at ${hub}.`
+        : 'Parcel has arrived at the destination hub.'
+    }
+    case 'OUT_FOR_DELIVERY': {
+      const hub = destinationHub || eventHub
+      return hub
+        ? `Parcel is out for delivery from ${hub}.`
+        : 'Parcel is out for delivery.'
+    }
+    case 'DELIVERY_ATTEMPTED': {
+      const hub = eventHub || destinationHub
+      return hub
+        ? `Delivery was attempted at ${hub}.`
+        : 'A delivery attempt was made.'
+    }
+    case 'DELIVERED':
+      return 'Parcel successfully delivered.'
+    case 'ON_HOLD':
+      return 'Parcel movement is on hold.'
+    case 'RETURNED':
+      return 'Parcel has been returned.'
+    case 'CANCELLED':
+      return 'Parcel delivery was cancelled.'
+    default:
+      return event.description || event.statusName || 'Tracking update recorded.'
+  }
+}
+
 function ContactCard({ contact, title }) {
   if (!contact) return null
 
@@ -88,8 +142,8 @@ function CustomerParcelDetailsPage() {
               {parcel.declaredValue != null && (
                 <div><dt>Declared Value</dt><dd>{parcel.declaredValue}</dd></div>
               )}
-              <div><dt>Origin Hub</dt><dd>{parcel.originHubName || '—'}</dd></div>
-              <div><dt>Destination Hub</dt><dd>{parcel.destinationHubName || '—'}</dd></div>
+              <div><dt>Origin Hub</dt><dd>{parcel.originHubName || 'Not Available'}</dd></div>
+              <div><dt>Destination Hub</dt><dd>{parcel.destinationHubName || 'Not Available'}</dd></div>
               <div><dt>Current Hub</dt><dd>{parcel.currentHubName || '—'}</dd></div>
               {parcel.currentStatusDescription && (
                 <div className="customer-dashboard__fact-wide">
@@ -123,7 +177,7 @@ function CustomerParcelDetailsPage() {
                         <StatusBadge status={event.statusName} />
                         <time dateTime={event.eventAt}>{formatDate(event.eventAt, true)}</time>
                       </div>
-                      {event.description && <p>{event.description}</p>}
+                      <p>{getTrackingDescription(event, parcel)}</p>
                       {event.hubName && <p className="customer-dashboard__timeline-location">{event.hubName}</p>}
                     </div>
                   </li>

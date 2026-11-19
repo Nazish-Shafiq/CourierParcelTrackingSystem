@@ -4,6 +4,7 @@ using CourierParcelTrackingSystem.API.DTOs.ParcelTracking;
 using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using RouteEntity = CourierParcelTrackingSystem.API.Entities.Route;
 
 namespace CourierParcelTrackingSystem.API.Services.Implementations;
 
@@ -90,6 +91,33 @@ public class ParcelTrackingService : IParcelTrackingService
         if (status == null)
             throw new KeyNotFoundException(
                 "Parcel status not found or inactive.");
+
+        var currentCode = parcel.CurrentStatus.StatusCode;
+        if (!ParcelStatusTransitionRules.IsGeneralAllowed(
+            currentCode,
+            status.StatusCode))
+        {
+            if (currentCode.Trim().Equals(
+                "ON_HOLD",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                var resumeCode = await _repository
+                    .GetStatusCodeBeforeOnHoldAsync(parcel.ParcelId);
+                if (!ParcelStatusTransitionRules.IsGeneralAllowed(
+                    currentCode,
+                    status.StatusCode,
+                    resumeCode))
+                {
+                    throw new InvalidOperationException(
+                        $"Parcel transition from {currentCode} to {status.StatusCode} is not allowed.");
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Parcel transition from {currentCode} to {status.StatusCode} is not allowed.");
+            }
+        }
 
         // Validate hub when supplied.
         Hub? hub = null;
@@ -246,16 +274,9 @@ public class ParcelTrackingService : IParcelTrackingService
 
         var currentStatusCode = parcel.CurrentStatus.StatusCode;
         var requiresDispatcherReassignment = false;
-        var isAllowed = currentStatusCode.ToUpperInvariant() switch
-        {
-            "BOOKED" => targetStatusCode == "PICKED_UP",
-            "PICKED_UP" => targetStatusCode == "IN_TRANSIT",
-            "IN_TRANSIT" => targetStatusCode == "AT_DESTINATION_HUB",
-            "AT_DESTINATION_HUB" => targetStatusCode == "OUT_FOR_DELIVERY",
-            "DELIVERY_ATTEMPTED" => targetStatusCode == "OUT_FOR_DELIVERY",
-            "OUT_FOR_DELIVERY" => targetStatusCode is "DELIVERED" or "DELIVERY_ATTEMPTED",
-            _ => false
-        };
+        var isAllowed = ParcelStatusTransitionRules.IsCourierAllowed(
+            currentStatusCode,
+            targetStatusCode);
 
         if (currentStatusCode.Equals(
             "DELIVERY_ATTEMPTED",
@@ -319,6 +340,12 @@ public class ParcelTrackingService : IParcelTrackingService
                 ?? string.Empty,
             HubId = statusEvent.HubId,
             HubName = statusEvent.Hub?.HubName,
+            OriginHubName = RouteHubName(
+                statusEvent.Parcel?.Route,
+                statusEvent.Parcel?.Route?.OriginHub),
+            DestinationHubName = RouteHubName(
+                statusEvent.Parcel?.Route,
+                statusEvent.Parcel?.Route?.DestinationHub),
             CourierId = statusEvent.CourierId,
             CourierName = statusEvent.Courier?.FullName,
             EventAt = statusEvent.EventAt,
@@ -326,4 +353,7 @@ public class ParcelTrackingService : IParcelTrackingService
             CreatedAt = statusEvent.CreatedAt
         };
     }
+
+    private static string? RouteHubName(RouteEntity? route, Hub? hub) =>
+        route is not null ? hub?.HubName : null;
 }

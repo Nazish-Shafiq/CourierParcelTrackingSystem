@@ -13,4 +13,10 @@ public interface IReportsRepository
 
     Task<List<CourierPerformanceReportDto>> GetCourierPerformanceReportAsync(
         ReportRequestDto request);
+
+    Task<DeliveryReportDto> GetDeliveryReportAsync(ReportRequestDto request);
+
+    Task<List<HubParcelReportDto>> GetHubParcelReportAsync(ReportRequestDto request);
+
+    Task<UserReportDto> GetUserReportAsync();
 }

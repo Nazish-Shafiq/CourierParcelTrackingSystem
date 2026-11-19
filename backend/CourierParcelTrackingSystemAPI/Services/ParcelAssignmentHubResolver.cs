@@ -28,12 +28,24 @@ public static class ParcelAssignmentHubResolver
     {
         if (parcel.DeliveredAt.HasValue ||
             parcel.CurrentStatus.IsTerminal ||
-            parcel.CurrentStatus.StatusCode.Equals(
-                "DELIVERED",
-                StringComparison.OrdinalIgnoreCase))
+            ParcelStatusTransitionRules.IsTerminal(
+                parcel.CurrentStatus.StatusCode))
         {
             throw new InvalidOperationException(
                 "A delivered or terminal parcel cannot be assigned or reassigned.");
+        }
+    }
+
+    public static void EnsureParcelEligibleForInitialAssignment(Parcel parcel)
+    {
+        EnsureParcelCanBeAssigned(parcel);
+
+        if (!parcel.CurrentStatus.StatusCode.Equals(
+            "BOOKED",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Only BOOKED parcels can receive an initial courier assignment.");
         }
     }
 }

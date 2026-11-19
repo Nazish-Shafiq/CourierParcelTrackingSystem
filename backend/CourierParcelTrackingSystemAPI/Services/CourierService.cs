@@ -27,9 +27,11 @@ public class CourierService : ICourierService
     public async Task<PagedResponseDto<CourierResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? isAvailable)
+        bool? isAvailable,
+        bool? isActive)
     {
-        var result = await _repository.GetPagedAsync(pagination, search, isAvailable);
+        var result = await _repository.GetPagedAsync(
+            pagination, search, isAvailable, isActive);
 
         return new PagedResponseDto<CourierResponseDto>
         {
@@ -106,6 +108,12 @@ public class CourierService : ICourierService
                 "A Courier's hub cannot be changed while they have an active parcel assignment.");
         }
 
+        if (request.IsActive && courier.User?.IsDeleted == true)
+        {
+            throw new InvalidOperationException(
+                "A deleted linked user account cannot be reactivated through Courier management.");
+        }
+
         if (request.UserId.HasValue)
         {
             await EnsureUserCanBeLinkedAsync(request.UserId.Value, id);
@@ -120,8 +128,15 @@ public class CourierService : ICourierService
         courier.Hub = assignedHub;
         courier.VehicleType = Normalize(request.VehicleType);
         courier.VehicleNumber = Normalize(request.VehicleNumber);
-        courier.IsAvailable = request.IsAvailable;
+        var courierStatusChanged = courier.IsActive != request.IsActive;
+        courier.IsAvailable = request.IsActive && request.IsAvailable;
         courier.IsActive = request.IsActive;
+        if (courierStatusChanged && courier.User != null)
+        {
+            courier.User.IsActive = request.IsActive;
+            courier.User.UpdatedAt = DateTime.UtcNow;
+            courier.User.UpdatedBy = updatedBy;
+        }
 
         // Update audit information.
         courier.UpdatedAt = DateTime.UtcNow;
@@ -142,10 +157,22 @@ public class CourierService : ICourierService
         if (courier == null)
             return false;
 
+        if (await _repository.HasActiveAssignmentAsync(id))
+        {
+            throw new InvalidOperationException(
+                "A Courier with an active parcel assignment cannot be deactivated.");
+        }
+
         // Mark courier as deleted.
         courier.IsActive = false;
         courier.IsAvailable = false;
         courier.IsDeleted = true;
+        if (courier.User != null)
+        {
+            courier.User.IsActive = false;
+            courier.User.UpdatedAt = DateTime.UtcNow;
+            courier.User.UpdatedBy = updatedBy;
+        }
 
         // Update audit information.
         courier.UpdatedAt = DateTime.UtcNow;
@@ -181,6 +208,9 @@ public class CourierService : ICourierService
         UserId = c.UserId,
         HubId = c.HubId,
         HubName = c.Hub?.HubName,
+        HubCode = c.Hub?.HubCode,
+        HubCity = c.Hub?.City,
+        HubProvince = c.Hub?.Province,
         EmployeeCode = c.EmployeeCode,
         FullName = c.FullName,
         Phone = c.Phone,

@@ -9,7 +9,8 @@ public interface ICustomerService
     // Get customers with pagination and search.
     Task<PagedResponseDto<CustomerResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search);
+        string? search,
+        bool? isActive);
 
     // Get customer by ID.
     Task<CustomerResponseDto?> GetByIdAsync(int id);

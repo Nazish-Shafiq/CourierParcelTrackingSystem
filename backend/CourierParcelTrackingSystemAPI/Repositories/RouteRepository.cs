@@ -23,7 +23,8 @@ public class RouteRepository : IRouteRepository
     // Get paginated routes with optional search.
     public async Task<PagedResponseDto<RouteEntity>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? isActive)
     {
         int page = Math.Max(1, pagination.Page);
         int pageSize = Math.Clamp(pagination.PageSize, 1, 100);
@@ -33,6 +34,9 @@ public class RouteRepository : IRouteRepository
             .Include(r => r.OriginHub)
             .Include(r => r.DestinationHub)
             .Where(r => !r.IsDeleted);
+
+        if (isActive.HasValue)
+            query = query.Where(r => r.IsActive == isActive.Value);
 
         // Search by route code, route name, or hub names.
         if (!string.IsNullOrWhiteSpace(search))

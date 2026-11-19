@@ -7,10 +7,11 @@ export async function getHubs({
   pageSize = 10,
   search,
   activeOnly,
+  isActive,
   signal,
 } = {}) {
   const response = await axiosInstance.get(API_PATHS.hubs, {
-    params: { page, pageSize, search, activeOnly },
+    params: { page, pageSize, search, activeOnly, isActive },
     signal,
   })
   return getResponseData(response.data)

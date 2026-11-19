@@ -105,7 +105,7 @@ public class ReportsRepository : IReportsRepository
     {
         var couriers = _context.Couriers
             .AsNoTracking()
-            .Where(c => c.IsActive && !c.IsDeleted);
+            .Where(c => !c.IsDeleted);
 
         return await couriers
             .OrderBy(c => c.FullName)
@@ -114,6 +114,13 @@ public class ReportsRepository : IReportsRepository
                 CourierId = c.CourierId,
                 EmployeeCode = c.EmployeeCode,
                 CourierName = c.FullName,
+                Email = c.Email,
+                Phone = c.Phone,
+                HubName = c.Hub != null ? c.Hub.HubName : null,
+                VehicleType = c.VehicleType,
+                VehicleNumber = c.VehicleNumber,
+                IsAvailable = c.IsAvailable,
+                IsActive = c.IsActive,
 
                 TotalAssignedParcels = c.ParcelAssignments
                     .Where(a =>
@@ -128,20 +135,148 @@ public class ReportsRepository : IReportsRepository
                     .Distinct()
                     .Count(),
 
-                DeliveredParcels = c.ParcelAssignments
-                    .Where(a =>
+                ActiveAssignments = c.ParcelAssignments
+                    .Count(a =>
+                        a.UnassignedAt == null &&
                         a.Parcel.IsActive &&
-                        !a.Parcel.IsDeleted &&
-                        a.Parcel.CurrentStatus.StatusCode == "DELIVERED" &&
+                        !a.Parcel.IsDeleted),
+
+                DeliveredParcels = c.StatusEvents
+                    .Where(e =>
+                        e.Parcel.IsActive &&
+                        !e.Parcel.IsDeleted &&
+                        e.ParcelStatus.StatusCode == "DELIVERED" &&
                         (!request.FromDate.HasValue ||
-                            a.AssignedAt >= request.FromDate.Value.Date) &&
+                            e.EventAt >= request.FromDate.Value.Date) &&
                         (!request.ToDate.HasValue ||
-                            a.AssignedAt <
+                            e.EventAt <
                             request.ToDate.Value.Date.AddDays(1)))
-                    .Select(a => a.ParcelId)
+                    .Select(e => e.ParcelId)
                     .Distinct()
                     .Count()
             })
             .ToListAsync();
+    }
+
+    public async Task<DeliveryReportDto> GetDeliveryReportAsync(
+        ReportRequestDto request)
+    {
+        var query = _context.StatusEvents
+            .AsNoTracking()
+            .Where(e =>
+                e.Parcel.IsActive &&
+                !e.Parcel.IsDeleted &&
+                !e.ParcelStatus.IsDeleted &&
+                (e.ParcelStatus.StatusCode == "DELIVERED" ||
+                    e.ParcelStatus.StatusCode == "DELIVERY_ATTEMPTED"));
+
+        if (request.FromDate.HasValue)
+        {
+            var fromDate = request.FromDate.Value.Date;
+            query = query.Where(e => e.EventAt >= fromDate);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            var toDateExclusive = request.ToDate.Value.Date.AddDays(1);
+            query = query.Where(e => e.EventAt < toDateExclusive);
+        }
+
+        var events = await query
+            .OrderByDescending(e => e.EventAt)
+            .Select(e => new DeliveryReportEventDto
+            {
+                StatusEventId = e.StatusEventId,
+                ParcelId = e.ParcelId,
+                TrackingNumber = e.Parcel.TrackingNumber,
+                StatusCode = e.ParcelStatus.StatusCode,
+                StatusName = e.ParcelStatus.StatusName,
+                CourierName = e.Courier != null ? e.Courier.FullName : null,
+                HubName = e.Hub != null ? e.Hub.HubName : null,
+                EventAt = e.EventAt
+            })
+            .ToListAsync();
+
+        return new DeliveryReportDto
+        {
+            SuccessfulDeliveries = events.Count(e => e.StatusCode == "DELIVERED"),
+            FailedDeliveryAttempts = events.Count(e =>
+                e.StatusCode == "DELIVERY_ATTEMPTED"),
+            Events = events
+        };
+    }
+
+    public async Task<List<HubParcelReportDto>> GetHubParcelReportAsync(
+        ReportRequestDto request)
+    {
+        var parcels = _context.Parcels
+            .AsNoTracking()
+            .Where(p => p.IsActive && !p.IsDeleted);
+
+        if (request.FromDate.HasValue)
+        {
+            var fromDate = request.FromDate.Value.Date;
+            parcels = parcels.Where(p => p.BookingDate >= fromDate);
+        }
+
+        if (request.ToDate.HasValue)
+        {
+            var toDateExclusive = request.ToDate.Value.Date.AddDays(1);
+            parcels = parcels.Where(p => p.BookingDate < toDateExclusive);
+        }
+
+        return await _context.Hubs
+            .AsNoTracking()
+            .Where(h => !h.IsDeleted)
+            .OrderBy(h => h.HubName)
+            .Select(h => new HubParcelReportDto
+            {
+                HubId = h.HubId,
+                HubName = h.HubName,
+                HubCode = h.HubCode,
+                City = h.City,
+                Province = h.Province,
+                IsActive = h.IsActive,
+                OriginParcelCount = parcels.Count(p =>
+                    p.Route != null && p.Route.OriginHubId == h.HubId),
+                DestinationParcelCount = parcels.Count(p =>
+                    p.Route != null && p.Route.DestinationHubId == h.HubId)
+            })
+            .ToListAsync();
+    }
+
+    public async Task<UserReportDto> GetUserReportAsync()
+    {
+        var users = _context.Users
+            .AsNoTracking()
+            .Where(u => !u.IsDeleted);
+
+        var totalUsers = await users.CountAsync();
+        var activeUsers = await users.CountAsync(u => u.IsActive);
+        var inactiveUsers = totalUsers - activeUsers;
+
+        var roles = await _context.Roles
+            .AsNoTracking()
+            .Where(r => !r.IsDeleted)
+            .OrderBy(r => r.RoleName)
+            .Select(r => new UserRoleReportDto
+            {
+                RoleName = r.RoleName,
+                TotalUsers = r.UserRoles.Count(ur =>
+                    !ur.User.IsDeleted),
+                ActiveUsers = r.UserRoles.Count(ur =>
+                    !ur.User.IsDeleted && ur.User.IsActive),
+                InactiveUsers = r.UserRoles.Count(ur =>
+                    !ur.User.IsDeleted && !ur.User.IsActive)
+            })
+            .ToListAsync();
+
+        return new UserReportDto
+        {
+            TotalUsers = totalUsers,
+            ActiveUsers = activeUsers,
+            InactiveUsers = inactiveUsers,
+            Roles = roles
+        };
     }
 }

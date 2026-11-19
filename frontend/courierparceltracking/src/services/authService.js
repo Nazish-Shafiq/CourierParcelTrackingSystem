@@ -99,6 +99,25 @@ export async function getStaffRoles(signal) {
   })
 }
 
+export async function getAssignableRoles(signal) {
+  ensureApiUrl()
+  const response = await axiosInstance.get(`${AUTH_API_PATH}/roles`, { signal })
+  const roles = getResponseData(response.data)
+
+  if (!Array.isArray(roles)) {
+    throw new ApiError('The roles response did not contain a role list.')
+  }
+
+  return roles.map((role) => {
+    const roleId = Number(role?.roleId)
+    if (!Number.isInteger(roleId) || roleId <= 0 || typeof role?.roleName !== 'string') {
+      throw new ApiError('The roles response contained an invalid role.')
+    }
+
+    return { label: role.roleName, value: roleId }
+  })
+}
+
 export async function registerCustomer(request) {
   ensureApiUrl()
   ensureSecurePasswordTransport()

@@ -23,7 +23,11 @@ public class ParcelRepository : IParcelRepository
         ParcelQuery().OrderByDescending(p => p.BookingDate).ToListAsync();
 
     public Task<Parcel?> GetByIdAsync(long id) =>
-        ParcelQuery().FirstOrDefaultAsync(p => p.ParcelId == id);
+        ParcelQuery()
+            .Include(p => p.StatusEvents
+                .Where(statusEvent =>
+                    statusEvent.ParcelStatus.StatusCode == "DELIVERED"))
+            .FirstOrDefaultAsync(p => p.ParcelId == id);
 
     public async Task<(int TotalParcels, int BookedParcels, int DeliveredParcels)> GetCustomerParcelCountsAsync(
         int userId)
@@ -62,12 +66,6 @@ public class ParcelRepository : IParcelRepository
                 p.TrackingNumber.Contains(requestedSearch) ||
                 p.CurrentStatus.StatusName.Contains(requestedSearch) ||
                 (p.Route != null &&
-                    p.Route.IsActive &&
-                    !p.Route.IsDeleted &&
-                    p.Route.OriginHub.IsActive &&
-                    !p.Route.OriginHub.IsDeleted &&
-                    p.Route.DestinationHub.IsActive &&
-                    !p.Route.DestinationHub.IsDeleted &&
                     (p.Route.OriginHub.HubName.Contains(requestedSearch) ||
                      p.Route.DestinationHub.HubName.Contains(requestedSearch))));
         }
@@ -91,21 +89,27 @@ public class ParcelRepository : IParcelRepository
     }
 
     public Task<Parcel?> GetCustomerParcelDetailsAsync(int userId, long parcelId) =>
+        CustomerParcelDetailsQuery(userId)
+            .FirstOrDefaultAsync(p => p.ParcelId == parcelId);
+
+    public Task<Parcel?> GetCustomerParcelByTrackingNumberAsync(
+        int userId,
+        string trackingNumber) =>
+        CustomerParcelDetailsQuery(userId)
+            .FirstOrDefaultAsync(p => p.TrackingNumber == trackingNumber);
+
+    private IQueryable<Parcel> CustomerParcelDetailsQuery(int userId) =>
         CustomerParcelQuery(userId)
-            .Include(p => p.SenderCustomer)
             .Include(p => p.ParcelRecipient)
             .Include(p => p.CurrentHub)
             .Include(p => p.Route)
                 .ThenInclude(r => r!.OriginHub)
             .Include(p => p.Route)
                 .ThenInclude(r => r!.DestinationHub)
-            .Include(p => p.StatusEvents
-                .Where(e => e.ParcelStatus.IsActive && !e.ParcelStatus.IsDeleted))
+            .Include(p => p.StatusEvents)
                 .ThenInclude(e => e.ParcelStatus)
-            .Include(p => p.StatusEvents
-                .Where(e => e.ParcelStatus.IsActive && !e.ParcelStatus.IsDeleted))
-                .ThenInclude(e => e.Hub)
-            .FirstOrDefaultAsync(p => p.ParcelId == parcelId);
+            .Include(p => p.StatusEvents)
+                .ThenInclude(e => e.Hub);
 
     private IQueryable<Parcel> CustomerParcelQuery(int userId) =>
         _context.Parcels

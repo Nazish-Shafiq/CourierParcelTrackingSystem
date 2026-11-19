@@ -24,10 +24,11 @@ public class RouteController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] PaginationRequestDto pagination,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] bool? isActive)
     {
         var result = await _routeService.GetPagedAsync(
-            pagination, search);
+            pagination, search, isActive);
 
         return Ok(
             ApiResponse<PagedResponseDto<RouteResponseDto>>.Ok(
@@ -56,6 +57,7 @@ public class RouteController : ControllerBase
 
     // POST: api/Route
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(
         [FromBody] CreateRouteRequestDto request)
     {
@@ -73,6 +75,7 @@ public class RouteController : ControllerBase
 
     // PUT: api/Route/1
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] UpdateRouteRequestDto request)
@@ -98,6 +101,7 @@ public class RouteController : ControllerBase
     // DELETE: api/Route/1
     // Soft delete only; the database record is retained.
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         int? updatedBy = GetCurrentUserId();

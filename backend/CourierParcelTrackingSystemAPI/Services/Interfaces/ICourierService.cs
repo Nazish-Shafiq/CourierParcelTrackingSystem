@@ -10,7 +10,8 @@ public interface ICourierService
     Task<PagedResponseDto<CourierResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? isAvailable);
+        bool? isAvailable,
+        bool? isActive);
     Task<List<CourierDispatchOptionDto>> GetDispatchOptionsAsync(long parcelId);
     // Get courier by ID.
     Task<CourierResponseDto?> GetByIdAsync(int id);

@@ -24,9 +24,10 @@ public class CustomerController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCustomers(
         [FromQuery] PaginationRequestDto pagination,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] bool? isActive)
     {
-        var result = await _service.GetPagedAsync(pagination, search);
+        var result = await _service.GetPagedAsync(pagination, search, isActive);
 
         return Ok(
             ApiResponse<PagedResponseDto<CustomerResponseDto>>.Ok(

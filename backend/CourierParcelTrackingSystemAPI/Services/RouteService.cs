@@ -19,10 +19,11 @@ public class RouteService : IRouteService
     // Get paginated routes.
     public async Task<PagedResponseDto<RouteResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? isActive)
     {
         var result = await _routeRepository.GetPagedAsync(
-            pagination, search);
+            pagination, search, isActive);
 
         return new PagedResponseDto<RouteResponseDto>
         {

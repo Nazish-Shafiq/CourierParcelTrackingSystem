@@ -20,9 +20,11 @@ public class HubService : IHubService
     public async Task<PagedResponseDto<HubResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? activeOnly)
+        bool? activeOnly,
+        bool? isActive)
     {
-        var result = await _repository.GetPagedAsync(pagination, search, activeOnly);
+        var result = await _repository.GetPagedAsync(
+            pagination, search, activeOnly, isActive);
 
         return new PagedResponseDto<HubResponseDto>
         {

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 using CourierParcelTrackingSystem.API.Data;
 using CourierParcelTrackingSystem.API.DTOs.DashboardDTO;
+using CourierParcelTrackingSystem.API.Repositories;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 
 namespace CourierParcelTrackingSystem.API.Repositories.Implementations;
@@ -100,14 +101,10 @@ public class DashboardRepository : IDashboardRepository
         var totalParcels = await _context.Parcels
             .CountAsync(p => p.IsActive && !p.IsDeleted);
 
-        // Count parcels without an active assignment.
-        // Exclude terminal-status parcels from assignment requirements.
+        // Count parcels eligible for an initial courier assignment.
         var unassignedParcels = await _context.Parcels
-            .CountAsync(p =>
-                p.IsActive &&
-                !p.IsDeleted &&
-                !p.CurrentStatus.IsTerminal &&
-                !p.ParcelAssignments.Any(a => a.UnassignedAt == null));
+            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .CountAsync();
 
         // Count currently active assignments.
         var activeAssignments = await _context.ParcelAssignments
@@ -158,14 +155,10 @@ public class DashboardRepository : IDashboardRepository
             })
             .ToListAsync();
 
-        // Get the five most recent parcels waiting for assignment.
+        // Get the five most recent parcels eligible for initial assignment.
         var recentUnassignedParcels = await _context.Parcels
             .AsNoTracking()
-            .Where(p =>
-                p.IsActive &&
-                !p.IsDeleted &&
-                !p.CurrentStatus.IsTerminal &&
-                !p.ParcelAssignments.Any(a => a.UnassignedAt == null))
+            .Where(ParcelAssignmentEligibility.InitialAssignment)
             .OrderByDescending(p => p.BookingDate)
             .Take(5)
             .Select(p => new UnassignedParcelDto

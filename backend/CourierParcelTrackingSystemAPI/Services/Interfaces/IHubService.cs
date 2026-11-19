@@ -10,7 +10,8 @@ public interface IHubService
     Task<PagedResponseDto<HubResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? activeOnly = null);
+        bool? activeOnly = null,
+        bool? isActive = null);
 
     // Get hub by ID.
     Task<HubResponseDto?> GetByIdAsync(int id);

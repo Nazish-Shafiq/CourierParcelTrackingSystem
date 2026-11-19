@@ -23,7 +23,9 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100].map((pageSize) => ({
 function getEmptyValues(fields, isEditing = false) {
   return Object.fromEntries(
     fields
-      .filter((field) => isEditing || !field.editOnly)
+      .filter((field) => isEditing
+        ? !field.createOnly
+        : !field.editOnly)
       .map((field) => [
         field.name,
         field.defaultValue ?? (field.type === "checkbox" ? false : ""),
@@ -34,7 +36,9 @@ function getEmptyValues(fields, isEditing = false) {
 function getRecordValues(record, fields) {
   return Object.fromEntries(
     fields
-      .filter((field) => !field.editOnly || record)
+      .filter((field) =>
+        (!field.editOnly || record) && (!field.createOnly || !record),
+      )
       .map((field) => {
         const value = record[field.name];
         return [
@@ -50,7 +54,9 @@ function getRecordValues(record, fields) {
 function buildRequest(values, fields, isEditing) {
   return Object.fromEntries(
     fields
-      .filter((field) => isEditing || !field.editOnly)
+      .filter((field) => isEditing
+        ? !field.createOnly
+        : !field.editOnly)
       .map((field) => {
         const value = values[field.name];
         if (field.type === "checkbox") return [field.name, Boolean(value)];
@@ -99,7 +105,7 @@ function formatDetailValue(value) {
 }
 
 function AdminEntityManager({ config }) {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const formId = useId();
   const formController = useRef(null);
   const detailsController = useRef(null);
@@ -222,6 +228,7 @@ function AdminEntityManager({ config }) {
     requestPage,
     requestPageSize,
     requestSearch,
+    searchParams,
   ]);
 
   const filteredRecords = useMemo(() => {
@@ -389,6 +396,7 @@ function AdminEntityManager({ config }) {
 
   function renderField(field) {
     if (field.editOnly && !editingRecord) return null;
+    if (field.createOnly && editingRecord) return null;
     const id = `${formId}-${field.name}`;
     const value =
       formValues[field.name] ?? (field.type === "checkbox" ? false : "");
@@ -411,13 +419,16 @@ function AdminEntityManager({ config }) {
     }
 
     if (field.type === "select") {
+      const optionsKey = field.optionsKeyByMode?.[
+        editingRecord ? "edit" : "create"
+      ] ?? field.optionsKey;
       const options = field.optionsKey
-        ? (formOptions[field.optionsKey] ?? [])
+        ? (formOptions[optionsKey] ?? [])
         : (field.options ?? []);
       return (
         <FormSelect
           disabled={
-            isFormDataLoading || (field.optionsKey && Boolean(formDataError))
+            isFormDataLoading || (optionsKey && Boolean(formDataError))
           }
           id={id}
           key={field.name}
@@ -570,6 +581,26 @@ function AdminEntityManager({ config }) {
           placeholder={`Search ${config.title.toLowerCase()}…`}
           value={search}
         />
+        {config.listFilters?.map((filter) => (
+          <FormSelect
+            id={`admin-filter-${filter.name}`}
+            key={filter.name}
+            label={filter.label}
+            onChange={(event) => {
+              const nextParams = new URLSearchParams(searchParams);
+              if (event.target.value) {
+                nextParams.set(filter.name, event.target.value);
+              } else {
+                nextParams.delete(filter.name);
+              }
+              setSearchParams(nextParams);
+              setCurrentPage(1);
+            }}
+            options={filter.options}
+            placeholder={filter.placeholder}
+            value={searchParams.get(filter.name) ?? ""}
+          />
+        ))}
         <FormSelect
           id="admin-page-size"
           label="Rows per page"

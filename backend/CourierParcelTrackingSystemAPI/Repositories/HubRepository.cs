@@ -21,7 +21,8 @@ public class HubRepository : IHubRepository
     public async Task<PagedResponseDto<Hub>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? activeOnly)
+        bool? activeOnly,
+        bool? isActive)
     {
         var query = _context.Hubs
             .AsNoTracking()
@@ -29,6 +30,8 @@ public class HubRepository : IHubRepository
 
         if (activeOnly == true)
             query = query.Where(h => h.IsActive);
+        else if (isActive.HasValue)
+            query = query.Where(h => h.IsActive == isActive.Value);
 
         // Apply search when a search value is provided.
         if (!string.IsNullOrWhiteSpace(search))

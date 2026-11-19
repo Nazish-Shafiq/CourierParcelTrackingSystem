@@ -21,15 +21,19 @@ public class CourierRepository : ICourierRepository
     public async Task<PagedResponseDto<Courier>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? isAvailable)
+        bool? isAvailable,
+        bool? isActive)
     {
         var query = _context.Couriers
             .Include(c => c.Hub)
+            .Include(c => c.User)
             .AsNoTracking()
-            .Where(c => c.IsActive && !c.IsDeleted);
+            .Where(c => !c.IsDeleted);
 
         if (isAvailable.HasValue)
             query = query.Where(c => c.IsAvailable == isAvailable.Value);
+        if (isActive.HasValue)
+            query = query.Where(c => c.IsActive == isActive.Value);
 
         // Apply search when a search value is provided.
         if (!string.IsNullOrWhiteSpace(search))
@@ -82,6 +86,7 @@ public class CourierRepository : ICourierRepository
     {
         return await _context.Couriers
             .Include(c => c.Hub)
+            .Include(c => c.User)
             .FirstOrDefaultAsync(c =>
                 c.CourierId == id && !c.IsDeleted);
     }

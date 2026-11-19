@@ -2,9 +2,15 @@ import axiosInstance from './api/axiosInstance'
 import { API_PATHS } from './api/apiConfig'
 import { getResponseData } from './api/baseResponse'
 
-export async function getCustomers({ page = 1, pageSize = 10, search, signal } = {}) {
+export async function getCustomers({
+  page = 1,
+  pageSize = 10,
+  search,
+  isActive,
+  signal,
+} = {}) {
   const response = await axiosInstance.get(API_PATHS.customers, {
-    params: { page, pageSize, search },
+    params: { page, pageSize, search, isActive },
     signal,
   })
   return getResponseData(response.data)

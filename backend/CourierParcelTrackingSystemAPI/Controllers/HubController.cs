@@ -28,9 +28,11 @@ public class HubController : ControllerBase
     public async Task<IActionResult> GetHubs(
         [FromQuery] PaginationRequestDto pagination,
         [FromQuery] string? search,
-        [FromQuery] bool? activeOnly)
+        [FromQuery] bool? activeOnly,
+        [FromQuery] bool? isActive)
     {
-        var result = await _service.GetPagedAsync(pagination, search, activeOnly);
+        var result = await _service.GetPagedAsync(
+            pagination, search, activeOnly, isActive);
 
         return Ok(
             ApiResponse<PagedResponseDto<HubResponseDto>>.Ok(
@@ -60,6 +62,7 @@ public class HubController : ControllerBase
 
     // Create a new hub.
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<HubResponseDto>),
         StatusCodes.Status201Created)]
@@ -85,6 +88,7 @@ public class HubController : ControllerBase
 
     // Update an existing hub.
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<HubResponseDto>),
         StatusCodes.Status200OK)]
@@ -119,6 +123,7 @@ public class HubController : ControllerBase
 
     // Soft delete a hub.
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(
         typeof(ApiResponse<bool>),
         StatusCodes.Status200OK)]

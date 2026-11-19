@@ -61,7 +61,12 @@ public class ParcelService : IParcelService
         RouteId = p.RouteId, RouteName = p.Route?.RouteName,
         CurrentStatusId = p.CurrentStatusId, CurrentStatus = p.CurrentStatus.StatusName,
         BookingDate = p.BookingDate, ExpectedDeliveryDate = p.ExpectedDeliveryDate,
-        DeliveredAt = p.DeliveredAt, TotalWeightKg = p.TotalWeightKg,
+        DeliveredAt = p.DeliveredAt ?? p.StatusEvents
+            .OrderByDescending(statusEvent => statusEvent.EventAt)
+            .ThenByDescending(statusEvent => statusEvent.StatusEventId)
+            .Select(statusEvent => (DateTime?)statusEvent.EventAt)
+            .FirstOrDefault(),
+        TotalWeightKg = p.TotalWeightKg,
         DeclaredValue = p.DeclaredValue, SpecialInstructions = p.SpecialInstructions
     };
 }

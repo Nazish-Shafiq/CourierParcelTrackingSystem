@@ -14,4 +14,8 @@ public interface ICustomerDashboardService
         string? statusCode);
 
     Task<CustomerParcelDetailsDto?> GetParcelDetailsAsync(int userId, long parcelId);
+
+    Task<CustomerParcelDetailsDto?> GetParcelByTrackingNumberAsync(
+        int userId,
+        string trackingNumber);
 }

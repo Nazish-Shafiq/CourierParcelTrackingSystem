@@ -126,6 +126,16 @@ public class AuthService : IAuthService
             .ToList();
     }
 
+    public async Task<IReadOnlyList<RoleOptionDto>> GetAssignableRolesAsync()
+    {
+        var roles = await _repository.GetActiveRolesAsync();
+        return roles.Select(role => new RoleOptionDto
+        {
+            RoleId = role.RoleId,
+            RoleName = role.RoleName
+        }).ToList();
+    }
+
     public async Task<string> RegisterCustomerAsync(RegisterCustomerRequestDto request, int createdBy)
     {
         await EnsureUserIsUniqueAsync(request.UserName, request.Email);

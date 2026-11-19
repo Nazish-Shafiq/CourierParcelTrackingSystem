@@ -19,6 +19,10 @@ public class ParcelTrackingResponseDto
 
     public string? HubName { get; set; }
 
+    public string? OriginHubName { get; set; }
+
+    public string? DestinationHubName { get; set; }
+
     public int? CourierId { get; set; }
 
     public string? CourierName { get; set; }

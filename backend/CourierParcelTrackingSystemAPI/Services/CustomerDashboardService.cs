@@ -3,7 +3,6 @@ using CourierParcelTrackingSystem.API.DTOs.CustomerDashboardDTO;
 using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
-using RouteEntity = CourierParcelTrackingSystem.API.Entities.Route;
 
 namespace CourierParcelTrackingSystem.API.Services;
 
@@ -55,13 +54,26 @@ public class CustomerDashboardService : ICustomerDashboardService
         return parcel is null ? null : MapDetails(parcel);
     }
 
+    public async Task<CustomerParcelDetailsDto?> GetParcelByTrackingNumberAsync(
+        int userId,
+        string trackingNumber)
+    {
+        if (string.IsNullOrWhiteSpace(trackingNumber))
+            return null;
+
+        var parcel = await _repository.GetCustomerParcelByTrackingNumberAsync(
+            userId,
+            trackingNumber.Trim());
+        return parcel is null ? null : MapDetails(parcel);
+    }
+
     private static CustomerParcelDto MapParcel(Parcel parcel) => new()
     {
         ParcelId = parcel.ParcelId,
         TrackingNumber = parcel.TrackingNumber,
         BookingDate = parcel.BookingDate,
-        OriginHubName = ActiveRouteHubName(parcel.Route, parcel.Route?.OriginHub),
-        DestinationHubName = ActiveRouteHubName(parcel.Route, parcel.Route?.DestinationHub),
+        OriginHubName = parcel.Route?.OriginHub?.HubName,
+        DestinationHubName = parcel.Route?.DestinationHub?.HubName,
         TotalWeightKg = parcel.TotalWeightKg,
         CurrentStatusName = parcel.CurrentStatus.StatusName,
         CurrentStatusCode = parcel.CurrentStatus.StatusCode,
@@ -81,9 +93,9 @@ public class CustomerDashboardService : ICustomerDashboardService
         CurrentStatusName = parcel.CurrentStatus.StatusName,
         CurrentStatusCode = parcel.CurrentStatus.StatusCode,
         CurrentStatusDescription = parcel.CurrentStatus.Description,
-        OriginHubName = ActiveRouteHubName(parcel.Route, parcel.Route?.OriginHub),
-        DestinationHubName = ActiveRouteHubName(parcel.Route, parcel.Route?.DestinationHub),
-        CurrentHubName = ActiveHubName(parcel.CurrentHub),
+        OriginHubName = parcel.Route?.OriginHub?.HubName,
+        DestinationHubName = parcel.Route?.DestinationHub?.HubName,
+        CurrentHubName = parcel.CurrentHub?.HubName,
         Sender = new CustomerContactDto
         {
             Name = parcel.SenderCustomer.FullName,
@@ -115,15 +127,11 @@ public class CustomerDashboardService : ICustomerDashboardService
                 StatusName = statusEvent.ParcelStatus.StatusName,
                 StatusCode = statusEvent.ParcelStatus.StatusCode,
                 Description = statusEvent.ParcelStatus.Description,
-                HubName = ActiveHubName(statusEvent.Hub),
+                HubName = statusEvent.Hub?.HubName,
+                OriginHubName = parcel.Route?.OriginHub?.HubName,
+                DestinationHubName = parcel.Route?.DestinationHub?.HubName,
                 EventAt = statusEvent.EventAt
             })
             .ToList()
     };
-
-    private static string? ActiveHubName(Hub? hub) =>
-        hub is { IsActive: true, IsDeleted: false } ? hub.HubName : null;
-
-    private static string? ActiveRouteHubName(RouteEntity? route, Hub? hub) =>
-        route is { IsActive: true, IsDeleted: false } ? ActiveHubName(hub) : null;
 }

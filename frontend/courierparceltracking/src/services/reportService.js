@@ -21,3 +21,16 @@ export function getParcelStatusReport({ fromDate, toDate, signal } = {}) {
 export function getCourierPerformanceReport({ fromDate, toDate, signal } = {}) {
   return getReport('courier-performance', { fromDate, toDate, signal })
 }
+
+export function getDeliveryReport({ fromDate, toDate, signal } = {}) {
+  return getReport('deliveries', { fromDate, toDate, signal })
+}
+
+export function getHubParcelReport({ fromDate, toDate, signal } = {}) {
+  return getReport('hubs', { fromDate, toDate, signal })
+}
+
+export async function getUserReport(signal) {
+  const response = await axiosInstance.get(`${API_PATHS.reports}/users`, { signal })
+  return getResponseData(response.data)
+}

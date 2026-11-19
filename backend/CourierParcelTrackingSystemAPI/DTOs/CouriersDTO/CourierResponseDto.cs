@@ -11,6 +11,12 @@ public class CourierResponseDto
 
     public string? HubName { get; set; }
 
+    public string? HubCode { get; set; }
+
+    public string? HubCity { get; set; }
+
+    public string? HubProvince { get; set; }
+
     public string EmployeeCode { get; set; } = string.Empty;
 
     public string FullName { get; set; } = string.Empty;

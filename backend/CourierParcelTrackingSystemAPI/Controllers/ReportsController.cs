@@ -10,7 +10,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/reports")]
 [ApiController]
-[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
+[Authorize(Roles = "Admin")]
 public class ReportsController : ControllerBase
 {
     private readonly IReportsService _reportsService;
@@ -57,5 +57,37 @@ public class ReportsController : ControllerBase
             ApiResponse<List<CourierPerformanceReportDto>>.Ok(
                 result,
                 "Courier performance report retrieved successfully."));
+    }
+
+    [HttpGet("deliveries")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<DeliveryReportDto>>> GetDeliveryReport(
+        [FromQuery] ReportRequestDto request)
+    {
+        var result = await _reportsService.GetDeliveryReportAsync(request);
+        return Ok(ApiResponse<DeliveryReportDto>.Ok(
+            result,
+            "Delivery report retrieved successfully."));
+    }
+
+    [HttpGet("hubs")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<List<HubParcelReportDto>>>> GetHubReport(
+        [FromQuery] ReportRequestDto request)
+    {
+        var result = await _reportsService.GetHubParcelReportAsync(request);
+        return Ok(ApiResponse<List<HubParcelReportDto>>.Ok(
+            result,
+            "Hub parcel report retrieved successfully."));
+    }
+
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ApiResponse<UserReportDto>>> GetUserReport()
+    {
+        var result = await _reportsService.GetUserReportAsync();
+        return Ok(ApiResponse<UserReportDto>.Ok(
+            result,
+            "User report retrieved successfully."));
     }
 }

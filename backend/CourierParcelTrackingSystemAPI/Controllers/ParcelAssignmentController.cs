@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 using CourierParcelTrackingSystem.API.DTOs.Common;
+using CourierParcelTrackingSystem.API.DTOs.ParcelDTO;
 using CourierParcelTrackingSystem.API.DTOs.ParcelAssignmentDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
 
@@ -87,6 +88,19 @@ public class ParcelAssignmentController : ControllerBase
         return Ok(ApiResponse<List<ParcelAssignmentResponseDto>>.Ok(
             result,
             "Active parcel assignments retrieved successfully."));
+    }
+
+    // GET: api/parcel-assignments/eligible-parcels
+    // Get parcels eligible for their initial courier assignment.
+    [HttpGet("eligible-parcels")]
+    public async Task<ActionResult<ApiResponse<List<ParcelResponseDto>>>>
+        GetEligibleParcelsForInitialAssignment()
+    {
+        var result = await _service.GetEligibleParcelsForInitialAssignmentAsync();
+
+        return Ok(ApiResponse<List<ParcelResponseDto>>.Ok(
+            result,
+            "Parcels eligible for initial courier assignment retrieved successfully."));
     }
 
     // PUT: api/parcel-assignments/{id}/reassign

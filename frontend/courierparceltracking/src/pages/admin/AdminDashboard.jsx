@@ -83,7 +83,7 @@ function AdminDashboard() {
               accent="green"
               icon={Users}
               label="Total customers"
-              onClick={() => navigate('/admin/customers')}
+              onClick={() => navigate('/admin/customers?active=true')}
               value={dashboard.data.totalCustomers}
             />
             <DashboardStatCard
@@ -97,38 +97,38 @@ function AdminDashboard() {
               accent="amber"
               icon={Building2}
               label="Total hubs"
-              onClick={() => navigate('/admin/hubs')}
+              onClick={() => navigate('/admin/hubs?active=true')}
               value={dashboard.data.totalHubs}
             />
             <DashboardStatCard
               icon={Route}
               label="Total routes"
-              onClick={() => navigate('/admin/routes')}
+              onClick={() => navigate('/admin/routes?active=true')}
               value={dashboard.data.totalRoutes}
             />
             <DashboardStatCard
               icon={Users}
               label="Active booking agents"
-              onClick={() => navigate('/admin/users?role=Booking%20Agent')}
+              onClick={() => navigate('/admin/users?role=Booking%20Agent&active=true')}
               value={countUsersForRole(ROLE_NAMES.BOOKING_AGENT)}
             />
             <DashboardStatCard
               accent="violet"
               icon={Users}
               label="Active dispatchers"
-              onClick={() => navigate('/admin/users?role=Dispatcher')}
+              onClick={() => navigate('/admin/users?role=Dispatcher&active=true')}
               value={countUsersForRole(ROLE_NAMES.DISPATCHER)}
             />
             <DashboardStatCard
               accent="green"
               label="Available couriers"
-              onClick={() => navigate('/admin/couriers?availability=available')}
+              onClick={() => navigate('/admin/couriers?availability=available&active=true')}
               value={dashboard.data.availableCouriers}
             />
             <DashboardStatCard
               accent="amber"
               label="Busy couriers"
-              onClick={() => navigate('/admin/couriers?availability=busy')}
+              onClick={() => navigate('/admin/couriers?availability=busy&active=true')}
               value={dashboard.data.busyCouriers}
             />
           </div>

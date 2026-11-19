@@ -9,6 +9,23 @@ namespace CourierParcelTrackingSystem.API.Services;
 
 public class ParcelStatusService : IParcelStatusService
 {
+    private static readonly HashSet<string> FixedStatusCodes = new(
+        new[]
+        {
+            "BOOKED",
+            "PICKED_UP",
+            "AT_ORIGIN_HUB",
+            "IN_TRANSIT",
+            "AT_DESTINATION_HUB",
+            "OUT_FOR_DELIVERY",
+            "DELIVERY_ATTEMPTED",
+            "DELIVERED",
+            "ON_HOLD",
+            "RETURNED",
+            "CANCELLED"
+        },
+        StringComparer.OrdinalIgnoreCase);
+
     private readonly IParcelStatusRepository _parcelStatusRepository;
 
     public ParcelStatusService(
@@ -46,41 +63,13 @@ public class ParcelStatusService : IParcelStatusService
     }
 
     // Create a new parcel status.
-    public async Task<ParcelStatusResponseDto> CreateAsync(
+    public Task<ParcelStatusResponseDto> CreateAsync(
         CreateParcelStatusRequestDto request,
         int? createdBy)
     {
-        string statusName = request.StatusName.Trim();
-
-        // Check duplicate status name.
-        bool nameExists =
-            await _parcelStatusRepository.StatusNameExistsAsync(statusName);
-
-        if (nameExists)
-        {
-            throw new ArgumentException(
-                "A parcel status with this name already exists.");
-        }
-
-        // Generate a unique status code.
-        string statusCode = await GenerateStatusCodeAsync();
-
-        var parcelStatus = new ParcelStatus
-        {
-            StatusCode = statusCode,
-            StatusName = statusName,
-            Description = Normalize(request.Description),
-            DisplayOrder = request.DisplayOrder,
-            IsTerminal = request.IsTerminal,
-            IsActive = true,
-            IsDeleted = false,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = createdBy
-        };
-
-        await _parcelStatusRepository.AddAsync(parcelStatus);
-
-        return MapToResponse(parcelStatus);
+        return Task.FromException<ParcelStatusResponseDto>(
+            new InvalidOperationException(
+                "The parcel status catalog is fixed and must reuse existing database status records."));
     }
 
     // Update an existing parcel status.
@@ -95,6 +84,13 @@ public class ParcelStatusService : IParcelStatusService
         if (parcelStatus == null)
         {
             return null;
+        }
+
+        if (FixedStatusCodes.Contains(parcelStatus.StatusCode) &&
+            (!request.IsActive || request.IsTerminal != parcelStatus.IsTerminal))
+        {
+            throw new InvalidOperationException(
+                "The workflow status code, active state, and terminal state must not be changed.");
         }
 
         string statusName = request.StatusName.Trim();
@@ -132,6 +128,12 @@ public class ParcelStatusService : IParcelStatusService
         if (parcelStatus == null)
         {
             return false;
+        }
+
+        if (FixedStatusCodes.Contains(parcelStatus.StatusCode))
+        {
+            throw new InvalidOperationException(
+                "Existing parcel workflow statuses cannot be soft deleted.");
         }
 
         parcelStatus.IsActive = false;

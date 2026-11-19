@@ -20,11 +20,15 @@ public class CustomerRepository : ICustomerRepository
     // Get customers with pagination and optional search.
     public async Task<PagedResponseDto<Customer>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? isActive)
     {
         var query = _context.Customers
             .AsNoTracking()
             .Where(c => !c.IsDeleted);
+
+        if (isActive.HasValue)
+            query = query.Where(c => c.IsActive == isActive.Value);
 
         // Apply search before pagination.
         if (!string.IsNullOrWhiteSpace(search))

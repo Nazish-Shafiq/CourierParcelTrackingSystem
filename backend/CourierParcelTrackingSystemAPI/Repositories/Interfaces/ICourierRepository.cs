@@ -10,7 +10,8 @@ public interface ICourierRepository
     Task<PagedResponseDto<Courier>> GetPagedAsync(
         PaginationRequestDto pagination,
         string? search,
-        bool? isAvailable);
+        bool? isAvailable,
+        bool? isActive);
     Task<List<Courier>> GetActiveCouriersForDispatchAsync(int hubId);
     // Get courier by ID.
     Task<Courier?> GetByIdAsync(int id);

@@ -91,7 +91,7 @@ function DispatcherParcelListPage({ unassignedOnly = false }) {
           <RefreshButton isLoading={parcels.isLoading} onRefresh={parcels.refresh} />
         )}
         description={unassignedOnly
-          ? 'Active parcels without a current courier assignment. Courier availability is checked again by the assignment API.'
+          ? 'BOOKED parcels without a current courier assignment. Courier availability is checked again by the assignment API.'
           : 'Search and filter active parcels using the parcel records returned by the backend.'}
         eyebrow="Parcel movement"
         title={title}

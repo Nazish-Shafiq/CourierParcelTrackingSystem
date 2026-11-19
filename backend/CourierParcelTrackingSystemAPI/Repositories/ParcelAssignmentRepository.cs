@@ -4,6 +4,7 @@ using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 using CourierParcelTrackingSystem.API.Data; // Change this if your DbContext has a different namespace.
+using CourierParcelTrackingSystem.API.Repositories;
 
 namespace CourierParcelTrackingSystem.API.Repositories.Implementations;
 
@@ -86,6 +87,19 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
             .ToListAsync();
     }
 
+    public Task<List<Parcel>> GetEligibleParcelsForInitialAssignmentAsync()
+    {
+        return _context.Parcels
+            .AsNoTracking()
+            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .Include(p => p.SenderCustomer)
+            .Include(p => p.CurrentStatus)
+            .Include(p => p.Route)
+            .OrderByDescending(p => p.BookingDate)
+            .ThenByDescending(p => p.ParcelId)
+            .ToListAsync();
+    }
+
     // Get an active parcel for assignment.
     public async Task<Parcel?> GetParcelForAssignmentAsync(long parcelId)
     {
@@ -128,6 +142,13 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
             .AnyAsync(a =>
                 a.ParcelId == parcelId &&
                 a.UnassignedAt == null);
+    }
+
+    public Task<bool> IsEligibleForInitialAssignmentAsync(long parcelId)
+    {
+        return _context.Parcels
+            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .AnyAsync(p => p.ParcelId == parcelId);
     }
 
     // Check whether the courier already has an active assignment.

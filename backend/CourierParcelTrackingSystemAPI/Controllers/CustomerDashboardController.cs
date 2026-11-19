@@ -69,6 +69,25 @@ public class CustomerDashboardController : ControllerBase
                 "Customer parcel details retrieved successfully."));
     }
 
+    [HttpGet("track/{trackingNumber}")]
+    public async Task<ActionResult<ApiResponse<CustomerParcelDetailsDto>>> TrackParcel(
+        string trackingNumber)
+    {
+        if (!TryGetCurrentUserId(out var userId))
+            return Unauthorized(ApiResponse<CustomerParcelDetailsDto>.Fail(
+                "Invalid user information in token."));
+
+        var result = await _service.GetParcelByTrackingNumberAsync(
+            userId,
+            trackingNumber);
+        return result is null
+            ? NotFound(ApiResponse<CustomerParcelDetailsDto>.Fail(
+                "No parcel for this tracking number was found in your account."))
+            : Ok(ApiResponse<CustomerParcelDetailsDto>.Ok(
+                result,
+                "Customer parcel tracking retrieved successfully."));
+    }
+
     private bool TryGetCurrentUserId(out int userId) =>
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
 }

@@ -1,5 +1,6 @@
 ﻿
 using CourierParcelTrackingSystem.API.DTOs.Common;
+using CourierParcelTrackingSystem.API.DTOs.ParcelDTO;
 using CourierParcelTrackingSystem.API.DTOs.ParcelAssignmentDTO;
 using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
@@ -29,7 +30,7 @@ public class ParcelAssignmentService : IParcelAssignmentService
             throw new KeyNotFoundException(
                 "Parcel not found or inactive.");
 
-        ParcelAssignmentHubResolver.EnsureParcelCanBeAssigned(parcel);
+        ParcelAssignmentHubResolver.EnsureParcelEligibleForInitialAssignment(parcel);
 
         if (await _repository.HasActiveAssignmentAsync(request.ParcelId))
             throw new InvalidOperationException(
@@ -53,6 +54,13 @@ public class ParcelAssignmentService : IParcelAssignmentService
         {
             throw new InvalidOperationException(
                 "The selected courier already has an active assignment.");
+        }
+
+        if (!await _repository.IsEligibleForInitialAssignmentAsync(
+            request.ParcelId))
+        {
+            throw new InvalidOperationException(
+                "The parcel is no longer eligible for an initial courier assignment.");
         }
 
         var assignment = new ParcelAssignment
@@ -112,6 +120,31 @@ public class ParcelAssignmentService : IParcelAssignmentService
         var assignments = await _repository.GetActiveAssignmentsAsync();
 
         return assignments.Select(MapToResponse).ToList();
+    }
+
+    public async Task<List<ParcelResponseDto>>
+        GetEligibleParcelsForInitialAssignmentAsync()
+    {
+        var parcels = await _repository
+            .GetEligibleParcelsForInitialAssignmentAsync();
+
+        return parcels.Select(parcel => new ParcelResponseDto
+        {
+            ParcelId = parcel.ParcelId,
+            TrackingNumber = parcel.TrackingNumber,
+            SenderCustomerId = parcel.SenderCustomerId,
+            SenderName = parcel.SenderCustomer.FullName,
+            RouteId = parcel.RouteId,
+            RouteName = parcel.Route?.RouteName,
+            CurrentStatusId = parcel.CurrentStatusId,
+            CurrentStatus = parcel.CurrentStatus.StatusName,
+            BookingDate = parcel.BookingDate,
+            ExpectedDeliveryDate = parcel.ExpectedDeliveryDate,
+            DeliveredAt = parcel.DeliveredAt,
+            TotalWeightKg = parcel.TotalWeightKg,
+            DeclaredValue = parcel.DeclaredValue,
+            SpecialInstructions = parcel.SpecialInstructions
+        }).ToList();
     }
 
     // Reassign a parcel to another courier.

@@ -39,5 +39,7 @@ public class CustomerTrackingEventDto
     public string StatusCode { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? HubName { get; set; }
+    public string? OriginHubName { get; set; }
+    public string? DestinationHubName { get; set; }
     public DateTime EventAt { get; set; }
 }

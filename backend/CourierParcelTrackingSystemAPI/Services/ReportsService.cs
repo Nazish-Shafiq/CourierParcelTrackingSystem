@@ -38,6 +38,23 @@ public class ReportsService : IReportsService
         return await _reportsRepository.GetCourierPerformanceReportAsync(request);
     }
 
+    public async Task<DeliveryReportDto> GetDeliveryReportAsync(
+        ReportRequestDto request)
+    {
+        ValidateDateRange(request);
+        return await _reportsRepository.GetDeliveryReportAsync(request);
+    }
+
+    public async Task<List<HubParcelReportDto>> GetHubParcelReportAsync(
+        ReportRequestDto request)
+    {
+        ValidateDateRange(request);
+        return await _reportsRepository.GetHubParcelReportAsync(request);
+    }
+
+    public Task<UserReportDto> GetUserReportAsync() =>
+        _reportsRepository.GetUserReportAsync();
+
     private static void ValidateDateRange(ReportRequestDto request)
     {
         if (request.FromDate.HasValue &&

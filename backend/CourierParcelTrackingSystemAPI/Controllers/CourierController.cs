@@ -29,9 +29,11 @@ public class CourierController : ControllerBase
     public async Task<IActionResult> GetCouriers(
         [FromQuery] PaginationRequestDto pagination,
         [FromQuery] string? search,
-        [FromQuery] bool? isAvailable)
+        [FromQuery] bool? isAvailable,
+        [FromQuery] bool? isActive)
     {
-        var result = await _service.GetPagedAsync(pagination, search, isAvailable);
+        var result = await _service.GetPagedAsync(
+            pagination, search, isAvailable, isActive);
 
         return Ok(
             ApiResponse<PagedResponseDto<CourierResponseDto>>.Ok(
@@ -129,9 +131,15 @@ public class CourierController : ControllerBase
         // Get logged-in user's ID from JWT token.
         int? updatedBy = GetCurrentUserId();
 
-        var result = await _service.SoftDeleteAsync(
-            id,
-            updatedBy);
+        bool result;
+        try
+        {
+            result = await _service.SoftDeleteAsync(id, updatedBy);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ApiResponse<bool>.Fail(ex.Message));
+        }
 
         if (!result)
         {

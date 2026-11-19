@@ -19,9 +19,11 @@ public class CustomerService : ICustomerService
     // Get customers with pagination and optional search.
     public async Task<PagedResponseDto<CustomerResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        bool? isActive)
     {
-        var result = await _repository.GetPagedAsync(pagination, search);
+        var result = await _repository.GetPagedAsync(
+            pagination, search, isActive);
 
         return new PagedResponseDto<CustomerResponseDto>
         {

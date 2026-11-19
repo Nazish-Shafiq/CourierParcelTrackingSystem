@@ -1,42 +1,25 @@
-import { getActiveParcelAssignments } from './parcelAssignmentService'
-import { getParcels } from './parcelService'
+import {
+  getActiveParcelAssignments,
+  getEligibleParcelsForInitialAssignment,
+} from './parcelAssignmentService'
 import { getCouriers, getDispatchCourierOptions } from './courierService'
 
-function getUnassignedParcels(parcels, assignments) {
-  const assignedParcelIds = new Set(
-    assignments
-      .filter((assignment) => assignment.unassignedAt == null)
-      .map((assignment) => assignment.parcelId),
-  )
-
-  return parcels.filter((parcel) => !assignedParcelIds.has(parcel.parcelId))
-}
-
 export async function getDispatcherUnassignedParcels(signal) {
-  const [parcels, assignments] = await Promise.all([
-    getParcels(signal),
-    getActiveParcelAssignments(signal),
-  ])
-
-  if (!Array.isArray(parcels) || !Array.isArray(assignments)) {
-    throw new Error('The parcel assignment lookup returned an invalid response.')
+  const parcels = await getEligibleParcelsForInitialAssignment(signal)
+  if (!Array.isArray(parcels)) {
+    throw new Error('The eligible parcel lookup returned an invalid response.')
   }
-
-  return getUnassignedParcels(parcels, assignments)
+  return parcels
 }
 
 export async function getDispatcherAssignmentOptions(signal) {
-  const [parcels, assignments] = await Promise.all([
-    getParcels(signal),
-    getActiveParcelAssignments(signal),
-  ])
-
-  if (!Array.isArray(parcels) || !Array.isArray(assignments)) {
-    throw new Error('The parcel assignment lookup returned an invalid response.')
+  const parcels = await getEligibleParcelsForInitialAssignment(signal)
+  if (!Array.isArray(parcels)) {
+    throw new Error('The eligible parcel lookup returned an invalid response.')
   }
 
   return {
-    parcels: getUnassignedParcels(parcels, assignments),
+    parcels,
   }
 }
 
@@ -50,7 +33,7 @@ export async function getDispatcherAvailableCouriers(parcelId, signal) {
 
 export async function getDispatcherCouriers(signal) {
   const [pagedCouriers, assignments] = await Promise.all([
-    getCouriers({ page: 1, pageSize: 100, signal }),
+    getCouriers({ page: 1, pageSize: 100, isActive: true, signal }),
     getActiveParcelAssignments(signal),
   ])
 

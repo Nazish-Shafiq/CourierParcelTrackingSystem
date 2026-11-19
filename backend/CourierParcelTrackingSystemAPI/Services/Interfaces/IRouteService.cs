@@ -8,7 +8,8 @@ public interface IRouteService
 {
     Task<PagedResponseDto<RouteResponseDto>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search);
+        string? search,
+        bool? isActive);
 
     Task<RouteResponseDto?> GetByIdAsync(int id);
 

@@ -1,5 +1,9 @@
 import AdminEntityManager from '../../components/admin/AdminEntityManager'
-import { getStaffRoles, registerStaff } from '../../services/authService'
+import {
+  getAssignableRoles,
+  getStaffRoles,
+  registerStaff,
+} from '../../services/authService'
 import { getActiveHubOptions } from '../../services/adminLookupService'
 import {
   couriersConfig,
@@ -12,14 +16,15 @@ import {
 } from './adminResourceConfigs'
 
 async function loadStaffRegistrationOptions(signal) {
-  const [staffRoles, hubOptions] = await Promise.all([
+  const [staffRoles, roles, hubOptions] = await Promise.all([
     getStaffRoles(signal),
+    getAssignableRoles(signal),
     getActiveHubOptions(signal),
   ])
   if (!staffRoles.length) {
     throw new Error('No active staff roles are available for registration.')
   }
-  return { staffRoles, ...hubOptions }
+  return { staffRoles, roles, ...hubOptions }
 }
 
 function isCourierRoleSelected(values, options) {
@@ -37,7 +42,7 @@ const staffUsersConfig = {
   fields: [
     { name: 'userName', label: 'Username', required: true, minLength: 3, maxLength: 80 },
     { name: 'email', label: 'Email', type: 'email', required: true, maxLength: 256 },
-    { name: 'password', label: 'Temporary password', type: 'password', required: true, minLength: 8, maxLength: 100 },
+    { name: 'password', label: 'Temporary password', type: 'password', required: true, minLength: 8, maxLength: 100, createOnly: true },
     { name: 'fullName', label: 'Full name', required: true, maxLength: 150 },
     {
       name: 'phone',
@@ -56,6 +61,13 @@ const staffUsersConfig = {
       integer: true,
       numeric: true,
       optionsKey: 'staffRoles',
+      optionsKeyByMode: { create: 'staffRoles', edit: 'roles' },
+    },
+    {
+      name: 'isActive',
+      label: 'Active',
+      type: 'checkbox',
+      editOnly: true,
     },
     {
       name: 'hubId',
@@ -66,6 +78,7 @@ const staffUsersConfig = {
       placeholder: 'Select a hub',
       visibleWhen: isCourierRoleSelected,
       requiredWhen: isCourierRoleSelected,
+      createOnly: true,
     },
     {
       name: 'vehicleType',
@@ -73,6 +86,7 @@ const staffUsersConfig = {
       nullable: true,
       maxLength: 50,
       visibleWhen: isCourierRoleSelected,
+      createOnly: true,
     },
     {
       name: 'vehicleNumber',
@@ -80,6 +94,7 @@ const staffUsersConfig = {
       nullable: true,
       maxLength: 30,
       visibleWhen: isCourierRoleSelected,
+      createOnly: true,
     },
   ],
 }

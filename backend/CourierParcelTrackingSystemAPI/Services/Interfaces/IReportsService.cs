@@ -16,4 +16,10 @@ public interface IReportsService
     // Retrieves courier assignment and delivery performance details.
     Task<List<CourierPerformanceReportDto>> GetCourierPerformanceReportAsync(
         ReportRequestDto request);
+
+    Task<DeliveryReportDto> GetDeliveryReportAsync(ReportRequestDto request);
+
+    Task<List<HubParcelReportDto>> GetHubParcelReportAsync(ReportRequestDto request);
+
+    Task<UserReportDto> GetUserReportAsync();
 }

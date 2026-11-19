@@ -49,6 +49,16 @@ public class AuthController : ControllerBase
             "Staff roles retrieved successfully."));
     }
 
+    [HttpGet("roles")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAssignableRoles()
+    {
+        var roles = await _service.GetAssignableRolesAsync();
+        return Ok(ApiResponse<IReadOnlyList<RoleOptionDto>>.Ok(
+            roles,
+            "Active roles retrieved successfully."));
+    }
+
     [HttpPost("register-customer")]
     [Authorize(Roles = "Booking Agent")]
     public async Task<IActionResult> RegisterCustomer(RegisterCustomerRequestDto request)

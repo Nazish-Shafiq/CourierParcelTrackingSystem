@@ -1,5 +1,6 @@
 ﻿
 using CourierParcelTrackingSystem.API.DTOs.Common;
+using CourierParcelTrackingSystem.API.DTOs.ParcelDTO;
 using CourierParcelTrackingSystem.API.DTOs.ParcelAssignmentDTO;
 
 
@@ -18,6 +19,8 @@ public interface IParcelAssignmentService
     Task<ParcelAssignmentResponseDto> GetByIdAsync(long assignmentId);
 
     Task<List<ParcelAssignmentResponseDto>> GetActiveAssignmentsAsync();
+
+    Task<List<ParcelResponseDto>> GetEligibleParcelsForInitialAssignmentAsync();
 
     Task<ParcelAssignmentResponseDto> ReassignParcelAsync(
      long assignmentId,

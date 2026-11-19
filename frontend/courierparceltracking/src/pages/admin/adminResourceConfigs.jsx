@@ -27,7 +27,6 @@ import {
 import {
   getParcelStatusById,
   getParcelStatuses,
-  createParcelStatus,
   updateParcelStatus,
   deleteParcelStatus,
 } from "../../services/parcelStatusService";
@@ -38,7 +37,12 @@ import {
   updateRoute,
   deleteRoute,
 } from "../../services/routeService";
-import { getUserById, getUsers } from "../../services/userService";
+import {
+  deleteUser,
+  getUserById,
+  getUsers,
+  updateUser,
+} from "../../services/userService";
 import {
   getParcelFormOptions,
   getActiveHubOptions,
@@ -57,19 +61,41 @@ export const usersConfig = {
   key: "users",
   title: "Users",
   singular: "user",
-  description: "View active user accounts and their assigned role names.",
+  description: "View, update, activate, deactivate, and soft-delete user accounts.",
   clientSide: true,
   list: ({ signal }) => getUsers(signal),
+  update: updateUser,
+  remove: deleteUser,
   filterRecord: (user, searchParams) => {
     const role = searchParams.get("role");
-    return !role || user.roles?.some(
+    const active = searchParams.get("active");
+    const matchesRole = !role || user.roles?.some(
       (userRole) => userRole.toLowerCase() === role.toLowerCase(),
     );
+    const matchesActive = !active
+      || (active === "true" ? user.isActive : !user.isActive);
+    return matchesRole && matchesActive;
   },
   getById: getUserById,
   idField: "userId",
   searchFields: ["userName", "fullName", "email", "phone", "roles"],
   getDisplayName: (user) => user.fullName || user.userName,
+  fields: [
+    { name: "userName", label: "Username", required: true, minLength: 3, maxLength: 80 },
+    { name: "email", label: "Email", type: "email", required: true, maxLength: 256 },
+    { name: "fullName", label: "Full name", required: true, minLength: 2, maxLength: 150 },
+    { name: "phone", label: "Phone", type: "tel", nullable: true, minLength: 7, maxLength: 30 },
+    {
+      name: "roleId",
+      label: "Role",
+      type: "select",
+      required: true,
+      numeric: true,
+      editOnly: true,
+      optionsKey: "roles",
+    },
+    { name: "isActive", label: "Active", type: "checkbox", editOnly: true },
+  ],
   columns: [
     { key: "fullName", header: "Full name" },
     { key: "userName", header: "Username" },
@@ -107,7 +133,16 @@ export const customersConfig = {
   singular: "customer",
   description: "Search, create, update, and deactivate customer records.",
   paged: true,
-  list: getCustomers,
+  list: ({ page, pageSize, search, signal }) => {
+    const active = new URLSearchParams(window.location.search).get("active");
+    return getCustomers({
+      page,
+      pageSize,
+      search,
+      isActive: active === "true" ? true : active === "false" ? false : undefined,
+      signal,
+    });
+  },
   getById: getCustomerById,
   create: createCustomer,
   update: updateCustomer,
@@ -115,6 +150,17 @@ export const customersConfig = {
   idField: "customerId",
   getDisplayName: (customer) => customer.fullName || customer.customerCode,
   searchFields: [],
+  listFilters: [
+    {
+      name: "active",
+      label: "Account status",
+      placeholder: "All",
+      options: [
+        { label: "Active", value: "true" },
+        { label: "Inactive", value: "false" },
+      ],
+    },
+  ],
   columns: [
     { key: "customerCode", header: "Customer code" },
     { key: "fullName", header: "Full name" },
@@ -180,7 +226,9 @@ export const couriersConfig = {
   description: "Manage Courier profiles and availability.",
   paged: true,
   list: ({ page, pageSize, search, signal }) => {
-    const availability = new URLSearchParams(window.location.search).get("availability");
+    const searchParams = new URLSearchParams(window.location.search);
+    const availability = searchParams.get("availability");
+    const active = searchParams.get("active");
     return getCouriers({
       page,
       pageSize,
@@ -190,6 +238,7 @@ export const couriersConfig = {
         : availability === "busy"
           ? false
           : undefined,
+      isActive: active === "true" ? true : active === "false" ? false : undefined,
       signal,
     });
   },
@@ -199,12 +248,33 @@ export const couriersConfig = {
   remove: deleteCourier,
   idField: "courierId",
   getDisplayName: (courier) => courier.fullName || courier.employeeCode,
+  listFilters: [
+    {
+      name: "availability",
+      label: "Availability",
+      placeholder: "All",
+      options: [
+        { label: "Available", value: "available" },
+        { label: "Busy", value: "busy" },
+      ],
+    },
+    {
+      name: "active",
+      label: "Account status",
+      placeholder: "All",
+      options: [
+        { label: "Active", value: "true" },
+        { label: "Inactive", value: "false" },
+      ],
+    },
+  ],
   columns: [
+    { key: "fullName", header: "Courier name" },
     { key: "employeeCode", header: "Employee code" },
-    { key: "fullName", header: "Full name" },
-    { key: "hubName", header: "Assigned hub", render: (courier) => courier.hubName || "—" },
     { key: "phone", header: "Phone" },
-    { key: "vehicleType", header: "Vehicle" },
+    { key: "vehicleType", header: "Vehicle type" },
+    { key: "vehicleNumber", header: "Vehicle number", render: (courier) => courier.vehicleNumber || "—" },
+    { key: "hubName", header: "Assigned hub", render: (courier) => courier.hubName || "Not Assigned" },
     {
       key: "isAvailable",
       header: "Availability",
@@ -269,21 +339,15 @@ export const couriersConfig = {
     { name: "isActive", label: "Active", type: "checkbox", editOnly: true },
   ],
   detailFields: [
-    { key: "employeeCode", label: "Employee code" },
-    { key: "hubName", label: "Assigned hub" },
     { key: "fullName", label: "Full name" },
-    { key: "userId", label: "Linked user ID" },
-    { key: "phone", label: "Phone" },
+    { key: "employeeCode", label: "Employee code" },
     { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
     { key: "vehicleType", label: "Vehicle type" },
     { key: "vehicleNumber", label: "Vehicle number" },
-    { key: "isAvailable", label: "Available" },
-    { key: "isActive", label: "Active" },
-    {
-      key: "createdAt",
-      label: "Created",
-      value: (courier) => formatDate(courier.createdAt),
-    },
+    { key: "hubName", label: "Assigned hub", value: (courier) => courier.hubName || "Not Assigned" },
+    { key: "isAvailable", label: "Availability", value: (courier) => (courier.isAvailable ? "Available" : "Unavailable") },
+    { key: "isActive", label: "Account status", value: (courier) => activeLabel(courier.isActive) },
   ],
 };
 
@@ -293,13 +357,37 @@ export const hubsConfig = {
   singular: "hub",
   description: "Manage operational hubs and their contact details.",
   paged: true,
-  list: getHubs,
+  list: ({ page, pageSize, search, signal }) => {
+    const active = new URLSearchParams(window.location.search).get("active");
+    return getHubs({
+      page,
+      pageSize,
+      search,
+      isActive: active === "true" ? true : active === "false" ? false : undefined,
+      signal,
+    });
+  },
   getById: getHubById,
   create: createHub,
   update: updateHub,
   remove: deleteHub,
   idField: "hubId",
   getDisplayName: (hub) => hub.hubName || hub.hubCode,
+  listFilters: [
+    {
+      name: "active",
+      label: "Status",
+      placeholder: "All",
+      options: [
+        { label: "Active", value: "true" },
+        { label: "Inactive", value: "false" },
+      ],
+    },
+  ],
+  filterRecord: (hub, searchParams) => {
+    const active = searchParams.get("active");
+    return active !== "true" || hub.isActive;
+  },
   columns: [
     { key: "hubCode", header: "Hub code" },
     { key: "hubName", header: "Hub name" },
@@ -360,7 +448,6 @@ export const parcelStatusesConfig = {
   paged: true,
   list: getParcelStatuses,
   getById: getParcelStatusById,
-  create: createParcelStatus,
   update: updateParcelStatus,
   remove: deleteParcelStatus,
   idField: "parcelStatusId",
@@ -426,7 +513,16 @@ export const routesConfig = {
   singular: "route",
   description: "Manage routes between active hubs.",
   paged: true,
-  list: getRoutes,
+  list: ({ page, pageSize, search, signal }) => {
+    const active = new URLSearchParams(window.location.search).get("active");
+    return getRoutes({
+      page,
+      pageSize,
+      search,
+      isActive: active === "true" ? true : active === "false" ? false : undefined,
+      signal,
+    });
+  },
   getById: getRouteById,
   create: createRoute,
   update: updateRoute,
@@ -434,6 +530,21 @@ export const routesConfig = {
   loadFormOptions: getRouteFormOptions,
   idField: "routeId",
   getDisplayName: (route) => route.routeName || route.routeCode,
+  listFilters: [
+    {
+      name: "active",
+      label: "Status",
+      placeholder: "All",
+      options: [
+        { label: "Active", value: "true" },
+        { label: "Inactive", value: "false" },
+      ],
+    },
+  ],
+  filterRecord: (route, searchParams) => {
+    const active = searchParams.get("active");
+    return active !== "true" || route.isActive;
+  },
   validate: (values) =>
     values.originHubId && values.originHubId === values.destinationHubId
       ? "Origin and destination hubs must be different."
@@ -643,7 +754,9 @@ export const parcelsConfig = {
     {
       key: "deliveredAt",
       label: "Delivered at",
-      value: (parcel) => formatDate(parcel.deliveredAt),
+      value: (parcel) => parcel.deliveredAt
+        ? new Date(parcel.deliveredAt).toLocaleString()
+        : "Not Delivered",
     },
     { key: "totalWeightKg", label: "Weight (kg)" },
     { key: "declaredValue", label: "Declared value" },

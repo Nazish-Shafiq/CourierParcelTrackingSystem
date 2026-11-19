@@ -10,6 +10,13 @@
   margin-bottom: 1rem;
 }
 
+.customer-dashboard__track-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
 .customer-dashboard__all-button,
 .customer-dashboard__view-link,
 .customer-dashboard__back-link {
@@ -173,6 +180,10 @@
   .customer-dashboard__timeline-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .customer-dashboard__track-form {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .customer-dashboard__contacts {

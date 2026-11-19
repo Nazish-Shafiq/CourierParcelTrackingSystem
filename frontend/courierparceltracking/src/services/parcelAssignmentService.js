@@ -15,6 +15,14 @@ export async function getActiveParcelAssignments(signal) {
   return getResponseData(response.data)
 }
 
+export async function getEligibleParcelsForInitialAssignment(signal) {
+  const response = await axiosInstance.get(
+    `${API_PATHS.parcelAssignments}/eligible-parcels`,
+    { signal },
+  )
+  return getResponseData(response.data)
+}
+
 export async function getParcelAssignmentById(id, signal) {
   const response = await axiosInstance.get(`${API_PATHS.parcelAssignments}/${id}`, { signal })
   return getResponseData(response.data)
