@@ -6,12 +6,13 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.ParcelTracking;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/parcel-tracking")]
 [ApiController]
-[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
+[Authorize]
 public class ParcelTrackingController : ControllerBase
 {
     private readonly IParcelTrackingService _service;
@@ -29,14 +30,27 @@ public class ParcelTrackingController : ControllerBase
         return int.TryParse(userId, out var id) ? id : null;
     }
 
-    private int? GetCourierUserId() =>
-        User.IsInRole("Courier")
+    private int? GetCourierUserId()
+    {
+        var assignmentRoutePaths =
+            HttpContext.Items[ScreenAccessAttribute.AssignmentRoutePathItemKey]
+                as IEnumerable<string> ?? Array.Empty<string>();
+        var hasCourierScreenAssignment = assignmentRoutePaths.Any(routePath =>
+            routePath.StartsWith("/courier/", StringComparison.OrdinalIgnoreCase));
+
+        return User.IsInRole("Courier") || hasCourierScreenAssignment
             ? GetCurrentUserId()
             : null;
+    }
 
     // GET: api/parcel-tracking
     // Get all tracking events with pagination.
     [HttpGet]
+    [ScreenAccess(
+        "/booking/track-parcel",
+        "/dispatch/tracking",
+        "/courier/assigned-parcels",
+        "/courier/delivery-history")]
     public async Task<ActionResult<ApiResponse<PagedResponseDto<ParcelTrackingResponseDto>>>> GetAll(
         [FromQuery] PaginationRequestDto request)
     {
@@ -57,6 +71,11 @@ public class ParcelTrackingController : ControllerBase
     // GET: api/parcel-tracking/{trackingNumber}
     // Get complete tracking history by tracking number.
     [HttpGet("{trackingNumber}")]
+    [ScreenAccess(
+        "/booking/track-parcel",
+        "/dispatch/tracking",
+        "/courier/assigned-parcels",
+        "/courier/delivery-history")]
     public async Task<ActionResult<ApiResponse<List<ParcelTrackingResponseDto>>>> GetTrackingHistory(
         string trackingNumber)
     {
@@ -77,7 +96,7 @@ public class ParcelTrackingController : ControllerBase
     // POST: api/parcel-tracking
     // Create a new tracking event.
     [HttpPost]
-    [Authorize(Roles = "Admin,Booking Agent,Dispatcher")]
+    [ScreenAccess("/booking/bookings", "/dispatch/tracking")]
     public async Task<ActionResult<ApiResponse<ParcelTrackingResponseDto>>> CreateStatusEvent(
         [FromBody] CreateStatusEventRequestDto request)
     {
@@ -93,7 +112,7 @@ public class ParcelTrackingController : ControllerBase
     // PUT: api/parcel-tracking/{parcelId}/status
     // Update parcel status and create a tracking event.
     [HttpPut("{parcelId:long}/status")]
-    [Authorize(Roles = "Admin,Booking Agent,Dispatcher")]
+    [ScreenAccess("/booking/bookings", "/dispatch/tracking")]
     public async Task<ActionResult<ApiResponse<ParcelTrackingResponseDto>>> UpdateParcelStatus(
         long parcelId,
         [FromBody] UpdateParcelStatusRequestDto request)
@@ -110,7 +129,7 @@ public class ParcelTrackingController : ControllerBase
 
     // PUT: api/parcel-tracking/{parcelId}/courier-transition
     [HttpPut("{parcelId:long}/courier-transition")]
-    [Authorize(Roles = "Courier")]
+    [ScreenAccess("/courier/assigned-parcels", AllowAdmin = false)]
     public async Task<ActionResult<ApiResponse<ParcelTrackingResponseDto>>> UpdateCourierParcelStatus(
         long parcelId,
         [FromBody] UpdateCourierParcelStatusRequestDto request)

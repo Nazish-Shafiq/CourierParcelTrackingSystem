@@ -3,6 +3,7 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.CouriersDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,7 +23,7 @@ public class CourierController : ControllerBase
 
     // Get all couriers with pagination and optional search.
     [HttpGet]
-    [Authorize(Roles = "Admin,Dispatcher")]
+    [ScreenAccess("/dispatch/couriers")]
     [ProducesResponseType(
         typeof(ApiResponse<PagedResponseDto<CourierResponseDto>>),
         StatusCodes.Status200OK)]
@@ -32,6 +33,22 @@ public class CourierController : ControllerBase
         [FromQuery] bool? isAvailable,
         [FromQuery] bool? isActive)
     {
+        var assignmentRoutePaths =
+            HttpContext.Items[ScreenAccessAttribute.AssignmentRoutePathItemKey]
+                as IEnumerable<string> ?? Array.Empty<string>();
+        var hasAdditionalCourierScreenAccess =
+            !User.IsInRole("Dispatcher") &&
+            assignmentRoutePaths.Contains(
+                "/dispatch/couriers",
+                StringComparer.OrdinalIgnoreCase);
+        if (hasAdditionalCourierScreenAccess && isActive != true)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                ApiResponse<PagedResponseDto<CourierResponseDto>>.Fail(
+                    "Additional Couriers screen access is limited to active courier profiles."));
+        }
+
         var result = await _service.GetPagedAsync(
             pagination, search, isAvailable, isActive);
 
@@ -45,7 +62,7 @@ public class CourierController : ControllerBase
 
     // Get active couriers and dispatch-relevant details for Dispatcher screens.
     [HttpGet("dispatch-options")]
-    [Authorize(Roles = "Dispatcher")]
+    [ScreenAccess("/dispatch/assign", AllowAdmin = false)]
     [ProducesResponseType(
         typeof(ApiResponse<List<CourierDispatchOptionDto>>),
         StatusCodes.Status200OK)]

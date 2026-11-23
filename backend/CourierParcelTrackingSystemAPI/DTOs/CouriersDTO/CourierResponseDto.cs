@@ -31,6 +31,8 @@ public class CourierResponseDto
 
     public bool IsAvailable { get; set; }
 
+    public bool HasActiveAssignment { get; set; }
+
     public bool IsActive { get; set; }
 
     public DateTime CreatedAt { get; set; }

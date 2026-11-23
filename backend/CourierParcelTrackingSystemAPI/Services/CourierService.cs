@@ -32,10 +32,16 @@ public class CourierService : ICourierService
     {
         var result = await _repository.GetPagedAsync(
             pagination, search, isAvailable, isActive);
+        var activeCourierIds = (await _assignmentRepository.GetActiveCourierIdsAsync())
+            .ToHashSet();
 
         return new PagedResponseDto<CourierResponseDto>
         {
-            Items = result.Items.Select(Map).ToList(),
+            Items = result.Items
+                .Select(courier => Map(
+                    courier,
+                    activeCourierIds.Contains(courier.CourierId)))
+                .ToList(),
             Page = result.Page,
             PageSize = result.PageSize,
             TotalRecords = result.TotalRecords,
@@ -75,7 +81,9 @@ public class CourierService : ICourierService
     {
         var courier = await _repository.GetByIdAsync(id);
 
-        return courier is null ? null : Map(courier);
+        return courier is null
+            ? null
+            : Map(courier, await _repository.HasActiveAssignmentAsync(id));
     }
 
     // Update an existing courier.
@@ -145,7 +153,7 @@ public class CourierService : ICourierService
         // Save changes.
         await _repository.UpdateAsync(courier);
 
-        return Map(courier);
+        return Map(courier, await _repository.HasActiveAssignmentAsync(id));
     }
 
     // Soft delete an existing courier.
@@ -202,7 +210,7 @@ public class CourierService : ICourierService
     }
 
     // Map Courier entity to CourierResponseDto.
-    private static CourierResponseDto Map(Courier c) => new()
+    private static CourierResponseDto Map(Courier c, bool hasActiveAssignment) => new()
     {
         CourierId = c.CourierId,
         UserId = c.UserId,
@@ -218,6 +226,7 @@ public class CourierService : ICourierService
         VehicleType = c.VehicleType,
         VehicleNumber = c.VehicleNumber,
         IsAvailable = c.IsAvailable,
+        HasActiveAssignment = hasActiveAssignment,
         IsActive = c.IsActive,
         CreatedAt = c.CreatedAt
     };

@@ -3,6 +3,7 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.ParcelBookingDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
+[Authorize]
 public class ParcelBookingController : ControllerBase
 {
     private readonly IParcelBookingService _service;
@@ -22,6 +23,10 @@ public class ParcelBookingController : ControllerBase
 
     // GET: api/ParcelBooking?page=1&pageSize=10&search=
     [HttpGet]
+    [ScreenAccess(
+        "/booking/bookings",
+        "/dispatch/parcels",
+        "/dashboard/booking-agent")]
     public async Task<IActionResult> GetAll(
         [FromQuery] PaginationRequestDto pagination,
         [FromQuery] string? search)
@@ -36,6 +41,10 @@ public class ParcelBookingController : ControllerBase
 
     // GET: api/ParcelBooking/1
     [HttpGet("{id:long}")]
+    [ScreenAccess(
+        "/booking/bookings",
+        "/dispatch/parcels",
+        "/dashboard/booking-agent")]
     public async Task<IActionResult> GetById(long id)
     {
         var result = await _service.GetByIdAsync(id);
@@ -55,6 +64,7 @@ public class ParcelBookingController : ControllerBase
 
     // POST: api/ParcelBooking
     [HttpPost]
+    [ScreenAccess("/booking/book-parcel")]
     public async Task<IActionResult> Create(
         [FromBody] CreateParcelBookingRequestDto request)
     {

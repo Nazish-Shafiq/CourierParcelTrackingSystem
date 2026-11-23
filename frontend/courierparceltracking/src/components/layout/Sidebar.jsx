@@ -8,9 +8,29 @@ function Sidebar({
   isMobileOpen = false,
   onClose,
   onToggleCollapse,
+  assignedScreens = [],
   roles = [],
 }) {
-  const navigationItems = getNavigationForRoles(roles)
+  const { roleItems, additionalItems } = getNavigationForRoles(
+    roles,
+    assignedScreens,
+  )
+
+  function renderItems(items) {
+    return items.map(({ label, path, icon: Icon }) => (
+      <NavLink
+        className={({ isActive }) => `app-sidebar__link${isActive ? ' app-sidebar__link--active' : ''}`}
+        end={path === '/'}
+        key={path}
+        onClick={onClose}
+        title={isCollapsed ? label : undefined}
+        to={path}
+      >
+        <Icon aria-hidden="true" className="app-sidebar__link-icon" size={19} />
+        <span className="app-sidebar__link-label">{label}</span>
+      </NavLink>
+    ))
+  }
 
   return (
     <aside
@@ -38,20 +58,14 @@ function Sidebar({
       </div>
 
       <nav aria-label="Main navigation" className="app-sidebar__navigation">
-        <p className="app-sidebar__section-label">Workspace</p>
-        {navigationItems.map(({ label, path, icon: Icon }) => (
-          <NavLink
-            className={({ isActive }) => `app-sidebar__link${isActive ? ' app-sidebar__link--active' : ''}`}
-            end={path === '/'}
-            key={path}
-            onClick={onClose}
-            title={isCollapsed ? label : undefined}
-            to={path}
-          >
-            <Icon aria-hidden="true" className="app-sidebar__link-icon" size={19} />
-            <span className="app-sidebar__link-label">{label}</span>
-          </NavLink>
-        ))}
+        <p className="app-sidebar__section-label">Your role</p>
+        {renderItems(roleItems)}
+        {additionalItems.length > 0 && (
+          <>
+            <p className="app-sidebar__section-label">Additional access</p>
+            {renderItems(additionalItems)}
+          </>
+        )}
       </nav>
 
       <button

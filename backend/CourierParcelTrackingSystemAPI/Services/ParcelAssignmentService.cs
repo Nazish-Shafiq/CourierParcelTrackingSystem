@@ -60,7 +60,7 @@ public class ParcelAssignmentService : IParcelAssignmentService
             request.ParcelId))
         {
             throw new InvalidOperationException(
-                "The parcel is no longer eligible for an initial courier assignment.");
+                "The parcel is no longer eligible for courier assignment.");
         }
 
         var assignment = new ParcelAssignment
@@ -201,11 +201,17 @@ public class ParcelAssignmentService : IParcelAssignmentService
                 "The selected courier already has an active assignment.");
         }
 
+        var previousCourierHasOtherAssignments =
+            await _repository.HasOtherActiveAssignmentForCourierAsync(
+                currentAssignment.CourierId,
+                currentAssignment.ParcelAssignmentId);
+
         // End the previous assignment and release the old courier.
         currentAssignment.UnassignedAt = DateTime.UtcNow;
         currentAssignment.UnassignedBy = reassignedBy;
 
-        currentAssignment.Courier.IsAvailable = true;
+        currentAssignment.Courier.IsAvailable =
+            !previousCourierHasOtherAssignments;
 
         // Create a new assignment to preserve assignment history.
         var newAssignment = new ParcelAssignment
@@ -248,10 +254,15 @@ public class ParcelAssignmentService : IParcelAssignmentService
             throw new InvalidOperationException(
                 "Courier information could not be loaded.");
 
+        var courierHasOtherAssignments =
+            await _repository.HasOtherActiveAssignmentForCourierAsync(
+                assignment.CourierId,
+                assignment.ParcelAssignmentId);
+
         assignment.UnassignedAt = DateTime.UtcNow;
         assignment.UnassignedBy = unassignedBy;
 
-        assignment.Courier.IsAvailable = true;
+        assignment.Courier.IsAvailable = !courierHasOtherAssignments;
 
         await _repository.SaveChangesAsync();
     }

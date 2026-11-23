@@ -1,5 +1,4 @@
 import {
-  getActiveParcelAssignments,
   getEligibleParcelsForInitialAssignment,
 } from './parcelAssignmentService'
 import { getCouriers, getDispatchCourierOptions } from './courierService'
@@ -32,26 +31,15 @@ export async function getDispatcherAvailableCouriers(parcelId, signal) {
 }
 
 export async function getDispatcherCouriers(signal) {
-  const [pagedCouriers, assignments] = await Promise.all([
-    getCouriers({ page: 1, pageSize: 100, isActive: true, signal }),
-    getActiveParcelAssignments(signal),
-  ])
+  const pagedCouriers = await getCouriers({
+    page: 1,
+    pageSize: 100,
+    isActive: true,
+    signal,
+  })
 
   if (!pagedCouriers || !Array.isArray(pagedCouriers.items)) {
     throw new Error('The courier directory response was invalid.')
   }
-  if (!Array.isArray(assignments)) {
-    throw new Error('The active assignments response was invalid.')
-  }
-
-  const assignedCourierIds = new Set(
-    assignments
-      .filter((assignment) => assignment.unassignedAt == null)
-      .map((assignment) => assignment.courierId),
-  )
-
-  return pagedCouriers.items.map((courier) => ({
-    ...courier,
-    hasActiveAssignment: assignedCourierIds.has(courier.courierId),
-  }))
+  return pagedCouriers.items
 }

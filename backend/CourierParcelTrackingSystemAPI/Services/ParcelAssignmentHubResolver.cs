@@ -40,12 +40,14 @@ public static class ParcelAssignmentHubResolver
     {
         EnsureParcelCanBeAssigned(parcel);
 
-        if (!parcel.CurrentStatus.StatusCode.Equals(
-            "BOOKED",
-            StringComparison.OrdinalIgnoreCase))
+        var statusCode = parcel.CurrentStatus.StatusCode;
+        if (!statusCode.Equals("BOOKED", StringComparison.OrdinalIgnoreCase) &&
+            !statusCode.Equals(
+                "DELIVERY_ATTEMPTED",
+                StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
-                "Only BOOKED parcels can receive an initial courier assignment.");
+                "Only BOOKED or DELIVERY_ATTEMPTED parcels can receive a courier assignment.");
         }
     }
 }

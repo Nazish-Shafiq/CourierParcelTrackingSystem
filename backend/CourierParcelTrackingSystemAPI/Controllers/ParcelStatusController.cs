@@ -3,6 +3,7 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.ParcelStatusDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
+[Authorize]
 public class ParcelStatusController : ControllerBase
 {
     private readonly IParcelStatusService _parcelStatusService;
@@ -23,6 +24,11 @@ public class ParcelStatusController : ControllerBase
 
     // GET: api/ParcelStatus?page=1&pageSize=10&search=
     [HttpGet]
+    [ScreenAccess(
+        "/booking/book-parcel",
+        "/dispatch/assign",
+        "/dispatch/parcels",
+        "/courier/assigned-parcels")]
     public async Task<IActionResult> GetAll(
         [FromQuery] PaginationRequestDto pagination,
         [FromQuery] string? search)
@@ -38,6 +44,11 @@ public class ParcelStatusController : ControllerBase
 
     // GET: api/ParcelStatus/1
     [HttpGet("{id:int}")]
+    [ScreenAccess(
+        "/booking/book-parcel",
+        "/dispatch/assign",
+        "/dispatch/parcels",
+        "/courier/assigned-parcels")]
     public async Task<IActionResult> GetById(int id)
     {
         var parcelStatus =
@@ -58,6 +69,8 @@ public class ParcelStatusController : ControllerBase
 
     // POST: api/ParcelStatus
     [HttpPost]
+    [Authorize(Roles = "Admin")]
+    [ScreenAccess("/admin/parcel-status")]
     public async Task<IActionResult> Create(
         [FromBody] CreateParcelStatusRequestDto request)
     {
@@ -76,6 +89,8 @@ public class ParcelStatusController : ControllerBase
 
     // PUT: api/ParcelStatus/1
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    [ScreenAccess("/admin/parcel-status")]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] UpdateParcelStatusRequestDto request)
@@ -102,6 +117,8 @@ public class ParcelStatusController : ControllerBase
     // DELETE: api/ParcelStatus/1
     // Performs soft delete instead of permanently deleting.
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    [ScreenAccess("/admin/parcel-status")]
     public async Task<IActionResult> Delete(int id)
     {
         int? updatedBy = GetCurrentUserId();

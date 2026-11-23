@@ -101,9 +101,9 @@ public class DashboardRepository : IDashboardRepository
         var totalParcels = await _context.Parcels
             .CountAsync(p => p.IsActive && !p.IsDeleted);
 
-        // Count parcels eligible for an initial courier assignment.
+        // Count parcels eligible for courier assignment.
         var unassignedParcels = await _context.Parcels
-            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .Where(ParcelAssignmentEligibility.Eligible)
             .CountAsync();
 
         // Count currently active assignments.
@@ -155,10 +155,10 @@ public class DashboardRepository : IDashboardRepository
             })
             .ToListAsync();
 
-        // Get the five most recent parcels eligible for initial assignment.
+        // Get the five most recent parcels eligible for assignment.
         var recentUnassignedParcels = await _context.Parcels
             .AsNoTracking()
-            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .Where(ParcelAssignmentEligibility.Eligible)
             .OrderByDescending(p => p.BookingDate)
             .Take(5)
             .Select(p => new UnassignedParcelDto

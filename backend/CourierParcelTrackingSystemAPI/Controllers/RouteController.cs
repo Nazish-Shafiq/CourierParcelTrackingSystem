@@ -3,6 +3,7 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.RouteDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,7 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
+[Authorize]
 public class RouteController : ControllerBase
 {
     private readonly IRouteService _routeService;
@@ -22,6 +23,7 @@ public class RouteController : ControllerBase
 
     // GET: api/Route?page=1&pageSize=10&search=
     [HttpGet]
+    [ScreenAccess("/dispatch/routes", "/booking/book-parcel", "/dispatch/assign")]
     public async Task<IActionResult> GetAll(
         [FromQuery] PaginationRequestDto pagination,
         [FromQuery] string? search,
@@ -38,6 +40,7 @@ public class RouteController : ControllerBase
 
     // GET: api/Route/1
     [HttpGet("{id:int}")]
+    [ScreenAccess("/dispatch/routes", "/booking/book-parcel", "/dispatch/assign")]
     public async Task<IActionResult> GetById(int id)
     {
         var route = await _routeService.GetByIdAsync(id);

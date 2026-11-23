@@ -2,6 +2,7 @@
 using CourierParcelTrackingSystem.API.DTOs.AuthenticationDTO;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace CourierParcelTrackingSystem.API.Controllers;
@@ -60,7 +61,8 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register-customer")]
-    [Authorize(Roles = "Booking Agent")]
+    [Authorize]
+    [ScreenAccess("/booking/register-customer", AllowAdmin = false)]
     public async Task<IActionResult> RegisterCustomer(RegisterCustomerRequestDto request)
     {
         try { return StatusCode(201, ApiResponse<string>.Ok(await _service.RegisterCustomerAsync(request, CurrentUserId()), "Customer account created.")); }

@@ -139,17 +139,6 @@ function DispatcherDashboard() {
             </div>
           </DashboardSection>
 
-          <DashboardSection
-            description="Create transfers and confirm parcel arrival at destination hubs."
-            title="Hub transfers"
-          >
-            <Link className="dispatcher-quick-link" to="/dispatch/hub-transfers">
-              <span className="dispatcher-quick-link__icon">
-                <Package aria-hidden="true" size={18} />
-              </span>
-              <span>Open hub transfer management</span>
-            </Link>
-          </DashboardSection>
         </>
       )}
     </div>

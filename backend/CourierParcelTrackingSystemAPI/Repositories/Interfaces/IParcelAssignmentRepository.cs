@@ -17,7 +17,10 @@ public interface IParcelAssignmentRepository
     // Get all currently active assignments.
     Task<List<ParcelAssignment>> GetActiveAssignmentsAsync();
 
-    // Get parcels eligible for their initial courier assignment.
+    // Get courier IDs that currently have an active assignment.
+    Task<List<int>> GetActiveCourierIdsAsync();
+
+    // Get parcels eligible for courier assignment.
     Task<List<Parcel>> GetEligibleParcelsForInitialAssignmentAsync();
 
     // Get a parcel by ID for assignment.
@@ -29,11 +32,16 @@ public interface IParcelAssignmentRepository
     // Check whether a parcel already has an active assignment.
     Task<bool> HasActiveAssignmentAsync(long parcelId);
 
-    // Recheck initial assignment eligibility immediately before saving.
+    // Recheck assignment eligibility immediately before saving.
     Task<bool> IsEligibleForInitialAssignmentAsync(long parcelId);
 
     // Check whether a courier already has an active assignment.
     Task<bool> HasActiveAssignmentForCourierAsync(int courierId);
+
+    // Check whether the courier has another active assignment besides the given one.
+    Task<bool> HasOtherActiveAssignmentForCourierAsync(
+        int courierId,
+        long excludedAssignmentId);
 
     // Get the latest failed-delivery event time for a parcel.
     Task<DateTime?> GetLatestDeliveryAttemptAtAsync(long parcelId);

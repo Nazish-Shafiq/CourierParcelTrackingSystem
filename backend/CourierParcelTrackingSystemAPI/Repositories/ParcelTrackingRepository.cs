@@ -239,6 +239,10 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
             targetStatusCode,
             "DELIVERED",
             StringComparison.OrdinalIgnoreCase);
+        var isDeliveryAttempted = string.Equals(
+            targetStatusCode,
+            "DELIVERY_ATTEMPTED",
+            StringComparison.OrdinalIgnoreCase);
 
         await using (var transaction = await _context.Database
             .BeginTransactionAsync(IsolationLevel.Serializable))
@@ -318,7 +322,7 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                     return null;
                 }
 
-                if (isDelivered)
+                if (isDelivered || isDeliveryAttempted)
                 {
                     var endedAssignments = await _context.ParcelAssignments
                         .Where(a =>
@@ -329,6 +333,10 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                             .SetProperty(a => a.UnassignedAt, eventAt)
                             .SetProperty(a => a.UnassignedBy, (int?)userId));
 
+                    var hasOtherActiveAssignments = await _context.ParcelAssignments
+                        .AnyAsync(a =>
+                            a.CourierId == courierId &&
+                            a.UnassignedAt == null);
                     var releasedCouriers = await _context.Couriers
                         .Where(c =>
                             c.CourierId == courierId &&
@@ -336,14 +344,16 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                             c.IsActive &&
                             !c.IsDeleted)
                         .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(c => c.IsAvailable, true)
+                            .SetProperty(
+                                c => c.IsAvailable,
+                                !hasOtherActiveAssignments)
                             .SetProperty(c => c.UpdatedAt, eventAt)
                             .SetProperty(c => c.UpdatedBy, (int?)userId));
 
                     if (endedAssignments != 1 || releasedCouriers != 1)
                     {
                         throw new DbUpdateConcurrencyException(
-                            "The Courier assignment changed before delivery could be recorded.");
+                            "The Courier assignment changed before the status could be recorded.");
                     }
                 }
 

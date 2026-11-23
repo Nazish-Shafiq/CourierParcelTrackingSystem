@@ -3,12 +3,13 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.CustomerDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
-[Authorize(Roles = "Admin,Booking Agent")]
+[Authorize]
 [ApiController]
 [Route("api/customers")]
 public class CustomerController : ControllerBase
@@ -22,6 +23,7 @@ public class CustomerController : ControllerBase
 
     // Get all customers with pagination and optional search.
     [HttpGet]
+    [ScreenAccess("/booking/customers", "/booking/book-parcel", "/dashboard/booking-agent")]
     public async Task<IActionResult> GetCustomers(
         [FromQuery] PaginationRequestDto pagination,
         [FromQuery] string? search,
@@ -39,6 +41,7 @@ public class CustomerController : ControllerBase
 
     // Get customer by ID.
     [HttpGet("{id:int}")]
+    [ScreenAccess("/booking/customers", "/booking/book-parcel", "/dashboard/booking-agent")]
     [ProducesResponseType(
         typeof(ApiResponse<CustomerResponseDto>),
         StatusCodes.Status200OK)]
@@ -57,6 +60,7 @@ public class CustomerController : ControllerBase
 
     // Create a new customer.
     [HttpPost]
+    [ScreenAccess("/booking/customers")]
     [ProducesResponseType(
         typeof(ApiResponse<CustomerResponseDto>),
         StatusCodes.Status201Created)]
@@ -82,6 +86,7 @@ public class CustomerController : ControllerBase
 
     // Update an existing customer.
     [HttpPut("{id:int}")]
+    [ScreenAccess("/booking/customers")]
     [ProducesResponseType(
         typeof(ApiResponse<CustomerResponseDto>),
         StatusCodes.Status200OK)]
@@ -117,6 +122,7 @@ public class CustomerController : ControllerBase
 
     // Soft delete a customer.
     [HttpDelete("{id:int}")]
+    [ScreenAccess("/booking/customers")]
     [ProducesResponseType(
         typeof(ApiResponse<bool>),
         StatusCodes.Status200OK)]

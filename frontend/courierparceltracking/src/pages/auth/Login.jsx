@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { KeyRound, PackageCheck, UserRound } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import PasswordInput from '../../components/forms/PasswordInput'
 import '../../style/auth/login.css'
 
 function Login() {
@@ -61,14 +62,14 @@ function Login() {
             <label className="form-label" htmlFor="password">Password</label>
             <div className="input-group">
               <span className="input-group-text"><KeyRound aria-hidden="true" size={18} /></span>
-              <input
+              <PasswordInput
                 autoComplete="current-password"
-                className="form-control"
                 id="password"
+                inputClassName="form-control"
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                type="password"
                 value={password}
+                wrapperClassName="password-input--login"
               />
             </div>
           </div>

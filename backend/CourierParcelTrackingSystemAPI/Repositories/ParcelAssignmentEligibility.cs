@@ -5,13 +5,14 @@ namespace CourierParcelTrackingSystem.API.Repositories;
 
 internal static class ParcelAssignmentEligibility
 {
-    public static Expression<Func<Parcel, bool>> InitialAssignment =>
+    public static Expression<Func<Parcel, bool>> Eligible =>
         parcel =>
             parcel.IsActive &&
             !parcel.IsDeleted &&
             parcel.CurrentStatus.IsActive &&
             !parcel.CurrentStatus.IsDeleted &&
-            parcel.CurrentStatus.StatusCode == "BOOKED" &&
+            (parcel.CurrentStatus.StatusCode == "BOOKED" ||
+             parcel.CurrentStatus.StatusCode == "DELIVERY_ATTEMPTED") &&
             !parcel.DeliveredAt.HasValue &&
             !parcel.ParcelAssignments.Any(assignment =>
                 assignment.UnassignedAt == null);

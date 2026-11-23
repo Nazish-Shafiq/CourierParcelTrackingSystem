@@ -72,6 +72,14 @@ function AdminDashboard() {
 
       {dashboard.data && (
         <>
+          <DashboardSection
+            description="Delegate operational screen responsibilities to active Booking Agents, Dispatchers, and Couriers."
+            title="Screen assignment"
+          >
+            <Link className="btn btn-outline-primary" to="/admin/screen-assignments">
+              Manage screen assignments
+            </Link>
+          </DashboardSection>
           <div className="dashboard-stat-grid">
             <DashboardStatCard
               icon={Package}

@@ -87,11 +87,19 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
             .ToListAsync();
     }
 
+    public Task<List<int>> GetActiveCourierIdsAsync() =>
+        _context.ParcelAssignments
+            .AsNoTracking()
+            .Where(assignment => assignment.UnassignedAt == null)
+            .Select(assignment => assignment.CourierId)
+            .Distinct()
+            .ToListAsync();
+
     public Task<List<Parcel>> GetEligibleParcelsForInitialAssignmentAsync()
     {
         return _context.Parcels
             .AsNoTracking()
-            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .Where(ParcelAssignmentEligibility.Eligible)
             .Include(p => p.SenderCustomer)
             .Include(p => p.CurrentStatus)
             .Include(p => p.Route)
@@ -147,7 +155,7 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
     public Task<bool> IsEligibleForInitialAssignmentAsync(long parcelId)
     {
         return _context.Parcels
-            .Where(ParcelAssignmentEligibility.InitialAssignment)
+            .Where(ParcelAssignmentEligibility.Eligible)
             .AnyAsync(p => p.ParcelId == parcelId);
     }
 
@@ -159,6 +167,14 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
                 a.CourierId == courierId &&
                 a.UnassignedAt == null);
     }
+
+    public Task<bool> HasOtherActiveAssignmentForCourierAsync(
+        int courierId,
+        long excludedAssignmentId) =>
+        _context.ParcelAssignments.AnyAsync(assignment =>
+            assignment.CourierId == courierId &&
+            assignment.ParcelAssignmentId != excludedAssignmentId &&
+            assignment.UnassignedAt == null);
 
     public async Task<DateTime?> GetLatestDeliveryAttemptAtAsync(long parcelId)
     {

@@ -12,7 +12,6 @@ import {
   Truck,
   Users,
   Warehouse,
-  ArrowRightLeft,
 } from "lucide-react";
 import { hasAnyRole, normalizeRoleName } from "../utils/roleAccess.js";
 
@@ -48,9 +47,18 @@ export function getDashboardPathForRoles(roles = []) {
   return matchingRole ? ROLE_DASHBOARD_PATHS[matchingRole] : null;
 }
 
+export function hasAssignedScreen(assignedScreens, routePath) {
+  if (!Array.isArray(assignedScreens) || !routePath) return false;
+  const normalizedPath = routePath.toLowerCase();
+  return assignedScreens.some((screen) =>
+    screen.routePath?.toLowerCase() === normalizedPath,
+  );
+}
+
 export const ROLE_NAVIGATION = {
   [ROLE_NAMES.ADMIN]: [
     { label: "Users", path: "/admin/users", icon: Users },
+    { label: "Screen Assignments", path: "/admin/screen-assignments", icon: ClipboardList },
     { label: "Customers", path: "/admin/customers", icon: Users },
     { label: "Couriers", path: "/admin/couriers", icon: Truck },
     { label: "Hubs", path: "/admin/hubs", icon: Warehouse },
@@ -94,7 +102,6 @@ export const ROLE_NAVIGATION = {
     { label: "Routes", path: "/dispatch/routes", icon: Route },
     { label: "Couriers", path: "/dispatch/couriers", icon: Truck },
     { label: "Hubs", path: "/dispatch/hubs", icon: Warehouse },
-    { label: "Hub Transfers", path: "/dispatch/hub-transfers", icon: ArrowRightLeft },
     { label: "Tracking", path: "/dispatch/tracking", icon: MapPinned },
   ],
   [ROLE_NAMES.COURIER]: [
@@ -143,19 +150,37 @@ export function getPostLoginRedirect(roles, fromLocation) {
   return dashboardPath;
 }
 
-export function getNavigationForRoles(roles = []) {
-  const roleItems = Object.entries(ROLE_NAVIGATION)
+export function getNavigationForRoles(roles = [], assignedScreens = []) {
+  const roleItems = [
+    { ...dashboardItem, path: getDashboardPathForRoles(roles) || dashboardItem.path },
+    ...Object.entries(ROLE_NAVIGATION)
     .filter(([role]) => hasAnyRole(roles, [role]))
-    .flatMap(([, items]) => items);
-  const dashboardPath = getDashboardPathForRoles(roles);
-
-  return [
-    { ...dashboardItem, path: dashboardPath || dashboardItem.path },
-    ...roleItems,
+    .flatMap(([, items]) => items),
   ];
+  const rolePaths = new Set(roleItems.map((item) => item.path.toLowerCase()));
+  const additionalItems = Array.isArray(assignedScreens)
+    ? assignedScreens.map((screen) => {
+      const navigationItem = NAVIGATION_ITEMS.find((item) => (
+        item.path.toLowerCase() === screen.routePath?.toLowerCase()
+      ));
+      return navigationItem ?? {
+        label: screen.screenName,
+        path: screen.routePath,
+        icon: ClipboardList,
+        allowedRoles: [],
+      };
+    }).filter((item) => (
+      item.path &&
+      !rolePaths.has(item.path.toLowerCase()) &&
+      (item.allowedRoles.length === 0 ||
+        !hasAnyRole(roles, item.allowedRoles))
+    ))
+    : [];
+
+  return { roleItems, additionalItems };
 }
 
-export function getNavigationItem(pathname) {
+export function getNavigationItem(pathname, assignedScreens = []) {
   if (
     pathname === dashboardItem.path ||
     Object.values(ROLE_DASHBOARD_PATHS).includes(pathname)
@@ -168,5 +193,8 @@ export function getNavigationItem(pathname) {
   if (pathname.startsWith("/courier/delivery-history/")) {
     return NAVIGATION_ITEMS.find((item) => item.path === "/courier/delivery-history");
   }
-  return NAVIGATION_ITEMS.find((item) => item.path === pathname);
+  return NAVIGATION_ITEMS.find((item) => item.path === pathname) ??
+    assignedScreens.find((screen) => (
+      screen.routePath?.toLowerCase() === pathname.toLowerCase()
+    ));
 }

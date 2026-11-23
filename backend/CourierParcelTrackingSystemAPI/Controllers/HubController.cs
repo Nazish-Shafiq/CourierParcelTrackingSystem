@@ -3,12 +3,13 @@ using System.Security.Claims;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.DTOs.HubDTO;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using CourierParcelTrackingSystem.API.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CourierParcelTrackingSystem.API.Controllers;
 
-[Authorize(Roles = "Admin,Booking Agent,Dispatcher,Courier")]
+[Authorize]
 [ApiController]
 [Route("api/hubs")]
 public class HubController : ControllerBase
@@ -22,6 +23,7 @@ public class HubController : ControllerBase
 
     // Get all hubs with pagination and optional search.
     [HttpGet]
+    [ScreenAccess("/booking/book-parcel", "/dispatch/hubs")]
     [ProducesResponseType(
         typeof(ApiResponse<PagedResponseDto<HubResponseDto>>),
         StatusCodes.Status200OK)]
@@ -44,6 +46,7 @@ public class HubController : ControllerBase
 
     // Get hub by ID.
     [HttpGet("{id:int}")]
+    [ScreenAccess("/booking/book-parcel", "/dispatch/hubs")]
     [ProducesResponseType(
         typeof(ApiResponse<HubResponseDto>),
         StatusCodes.Status200OK)]

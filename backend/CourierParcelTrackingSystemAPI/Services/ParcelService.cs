@@ -19,7 +19,9 @@ public class ParcelService : IParcelService
         return parcel is null ? null : Map(parcel);
     }
 
-    public async Task<ParcelResponseDto> CreateAsync(CreateParcelRequestDto request)
+    public async Task<ParcelResponseDto> CreateAsync(
+        CreateParcelRequestDto request,
+        int createdBy)
     {
         if (request.ExpectedDeliveryDate.HasValue &&
             request.ExpectedDeliveryDate.Value < DateTime.UtcNow.Date)
@@ -48,7 +50,8 @@ public class ParcelService : IParcelService
             SpecialInstructions = request.SpecialInstructions,
             IsActive = true,
             IsDeleted = false,
-            CreatedAt = now
+            CreatedAt = now,
+            CreatedBy = createdBy
         };
 
         return Map(await _repository.CreateAsync(parcel));

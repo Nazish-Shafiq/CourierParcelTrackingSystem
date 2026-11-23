@@ -1,8 +1,10 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes, useLocation, useOutletContext } from "react-router-dom";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import PageHeader from "./components/common/PageHeader";
 import {
   getDashboardPathForRoles,
+  hasAssignedScreen,
   getNavigationItem,
   getPostLoginRedirect,
   ROLE_NAMES,
@@ -51,27 +53,42 @@ import {
   DispatcherParcelsPage,
   DispatcherUnassignedParcelsPage,
 } from "./pages/dispatcher/DispatcherParcelPages";
-import DispatcherHubTransfersPage from "./pages/dispatcher/DispatcherHubTransfersPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RoleBasedRoute from "./routes/RoleBasedRoute";
+
+const AdminScreenAssignmentsPage = lazy(
+  () => import("./pages/admin/AdminScreenAssignmentsPage"),
+);
 
 function DashboardIndex() {
   const { user } = useAuth();
   const dashboardPath = getDashboardPathForRoles(user?.roles);
-
   return <Navigate to={dashboardPath || "/access-denied"} replace />;
 }
 
 function NavigationPlaceholder() {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const navigationItem = getNavigationItem(pathname);
+  const {
+    assignedScreens = [],
+    isScreenAssignmentsLoading = false,
+  } = useOutletContext() ?? {};
+  const navigationItem = getNavigationItem(pathname, assignedScreens);
+
+  if (!navigationItem && isScreenAssignmentsLoading) {
+    return <div className="container py-5 text-center" role="status">Checking screen access…</div>;
+  }
 
   if (!navigationItem) {
     return <Navigate to="/" replace />;
   }
 
-  if (!hasAnyRole(user?.roles, navigationItem.allowedRoles)) {
+  const hasRoleAccess = hasAnyRole(user?.roles, navigationItem.allowedRoles ?? []);
+  const hasAssignment = hasAssignedScreen(
+    assignedScreens,
+    navigationItem.routePath ?? navigationItem.path,
+  );
+  if (!hasRoleAccess && !hasAssignment) {
     return <Navigate to="/access-denied" replace />;
   }
 
@@ -80,7 +97,7 @@ function NavigationPlaceholder() {
       <PageHeader
         description="This navigation destination is prepared for a future phase. No business module or API request is included yet."
         eyebrow="Coming in a later phase"
-        title={navigationItem.label}
+        title={navigationItem.label ?? navigationItem.screenName}
       />
     </section>
   );
@@ -138,6 +155,14 @@ function AppRoutes() {
             />
             <Route path="admin/routes" element={<AdminRoutesPage />} />
             <Route path="admin/reports" element={<AdminReportsPage />} />
+            <Route
+              path="admin/screen-assignments"
+              element={(
+                <Suspense fallback={<div className="container py-5 text-center" role="status">Loading screen assignments…</div>}>
+                  <AdminScreenAssignmentsPage />
+                </Suspense>
+              )}
+            />
           </Route>
           <Route
             element={
@@ -198,10 +223,6 @@ function AppRoutes() {
               element={<DispatcherCouriersPage />}
             />
             <Route path="dispatch/hubs" element={<DispatcherHubsPage />} />
-            <Route
-              path="dispatch/hub-transfers"
-              element={<DispatcherHubTransfersPage />}
-            />
             <Route
               path="dispatch/tracking"
               element={<DispatcherTrackingPage />}
