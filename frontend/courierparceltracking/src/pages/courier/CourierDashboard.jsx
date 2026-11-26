@@ -3,6 +3,7 @@ import { Clock3, MapPin, Package, Truck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import DashboardSection from '../../components/common/DashboardSection'
+import DashboardViewAll, { DASHBOARD_PREVIEW_LIMIT } from '../../components/common/DashboardViewAll'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -82,8 +83,13 @@ function CourierDashboard() {
                   title="No assigned parcels"
                 />
               )}
-              rows={assignedParcels.slice(0, 5)}
+              rows={assignedParcels.slice(0, DASHBOARD_PREVIEW_LIMIT)}
               getRowKey={(row) => row.parcelAssignmentId}
+            />
+            <DashboardViewAll
+              count={data.totalAssignedParcels}
+              label="View all assigned parcels"
+              to="/courier/assigned-parcels"
             />
           </DashboardSection>
 

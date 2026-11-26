@@ -8,6 +8,7 @@ public interface IParcelRepository
     Task<List<Parcel>> GetAllAsync();
     Task<Parcel?> GetByIdAsync(long id);
     Task<(int TotalParcels, int BookedParcels, int DeliveredParcels)> GetCustomerParcelCountsAsync(int userId);
+    Task<List<ParcelStatus>> GetCustomerParcelStatusesAsync(int userId);
     Task<PagedResponseDto<Parcel>> GetCustomerParcelsAsync(
         int userId,
         PaginationRequestDto pagination,

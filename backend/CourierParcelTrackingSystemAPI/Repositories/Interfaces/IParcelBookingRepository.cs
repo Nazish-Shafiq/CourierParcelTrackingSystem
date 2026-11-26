@@ -7,7 +7,10 @@ public interface IParcelBookingRepository
 {
     Task<PagedResponseDto<Parcel>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search);
+        string? search,
+        string? filter,
+        DateTime? fromBookingDate,
+        DateTime? beforeBookingDate);
 
     Task<Parcel?> GetByIdAsync(long id);
 

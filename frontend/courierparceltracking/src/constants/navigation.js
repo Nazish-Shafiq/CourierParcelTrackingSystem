@@ -31,6 +31,9 @@ export const ROLE_DASHBOARD_PATHS = {
   [ROLE_NAMES.CUSTOMER_VIEWER]: "/dashboard/customer",
 };
 
+const DISPATCH_UNASSIGNED_ALIAS = "/dispatch/unassigned";
+const DISPATCH_UNASSIGNED_PATH = "/dispatch/unassigned-parcels";
+
 const dashboardItem = {
   label: "Dashboard",
   path: "/",
@@ -110,12 +113,6 @@ export const ROLE_NAVIGATION = {
   ],
   [ROLE_NAMES.CUSTOMER_VIEWER]: [
     { label: "My Parcels", path: "/customer/parcels", icon: Package },
-    { label: "Track Parcel", path: "/customer/track-parcel", icon: MapPinned },
-    {
-      label: "Tracking History",
-      path: "/customer/tracking-history",
-      icon: Clock3,
-    },
   ],
 };
 
@@ -129,11 +126,14 @@ export function getPostLoginRedirect(roles, fromLocation) {
 
   const requestedPath = fromLocation?.pathname;
   if (!requestedPath || requestedPath === "/") return dashboardPath;
+  const resolvedPath = requestedPath === DISPATCH_UNASSIGNED_ALIAS
+    ? DISPATCH_UNASSIGNED_PATH
+    : requestedPath;
 
   const dashboardRole = Object.entries(ROLE_DASHBOARD_PATHS)
-    .find(([, path]) => path === requestedPath)?.[0];
+    .find(([, path]) => path === resolvedPath)?.[0];
   const navigationItem = NAVIGATION_ITEMS.find((item) => (
-    item.path === requestedPath || requestedPath.startsWith(`${item.path}/`)
+    item.path === resolvedPath || resolvedPath.startsWith(`${item.path}/`)
   ));
   const requiredRoles = dashboardRole
     ? [dashboardRole]
@@ -193,8 +193,11 @@ export function getNavigationItem(pathname, assignedScreens = []) {
   if (pathname.startsWith("/courier/delivery-history/")) {
     return NAVIGATION_ITEMS.find((item) => item.path === "/courier/delivery-history");
   }
-  return NAVIGATION_ITEMS.find((item) => item.path === pathname) ??
+  const resolvedPath = pathname === DISPATCH_UNASSIGNED_ALIAS
+    ? DISPATCH_UNASSIGNED_PATH
+    : pathname;
+  return NAVIGATION_ITEMS.find((item) => item.path === resolvedPath) ??
     assignedScreens.find((screen) => (
-      screen.routePath?.toLowerCase() === pathname.toLowerCase()
+      screen.routePath?.toLowerCase() === resolvedPath.toLowerCase()
     ));
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import DataTable from '../../components/tables/DataTable'
 import EmptyState from '../../components/common/EmptyState'
@@ -7,57 +7,55 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import PageHeader from '../../components/common/PageHeader'
 import RefreshButton from '../../components/common/RefreshButton'
 import StatusBadge from '../../components/common/StatusBadge'
+import Pagination from '../../components/tables/Pagination'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { getParcelBookings } from '../../services/bookingService'
+
+const PAGE_SIZE = 10
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString() : '—'
 }
 
-function getItems(payload) {
-  if (Array.isArray(payload)) return payload
-  if (payload && Array.isArray(payload.items)) return payload.items
-  return []
+function getTodayBookingRange() {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  return {
+    fromBookingDate: start.toISOString(),
+    beforeBookingDate: end.toISOString(),
+  }
 }
 
 function BookingAgentBookingsPage() {
   const [searchParams] = useSearchParams()
   const filter = searchParams.get('filter') ?? 'all'
+  const [pageState, setPageState] = useState(() => ({ filter, page: 1 }))
   const [search, setSearch] = useState('')
-  const loadBookings = useCallback((signal) => getParcelBookings({ page: 1, pageSize: 100, signal }), [])
-  const bookings = useDashboardData(loadBookings)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const page = pageState.filter === filter ? pageState.page : 1
 
-  const rows = useMemo(() => {
-    const items = getItems(bookings.data)
-    const query = search.trim().toLowerCase()
-    const today = new Date()
-    return items.filter((row) => {
-      const status = String(row.currentStatusName ?? '').trim().toLowerCase()
-      const bookingDate = row.bookingDate ? new Date(row.bookingDate) : null
-      const matchesFilter =
-        filter === 'today'
-          ? bookingDate && bookingDate.getFullYear() === today.getFullYear()
-            && bookingDate.getMonth() === today.getMonth()
-            && bookingDate.getDate() === today.getDate()
-          : filter === 'pending'
-            ? status === 'booked' || status === 'pending'
-            : filter === 'transit'
-              ? status === 'in transit' || status === 'out for delivery'
-              : filter === 'delivered'
-                ? status === 'delivered'
-                : filter === 'failed'
-                  ? status === 'delivery attempted' || status.includes('failed')
-                  : true
-      if (!matchesFilter) return false
-      if (!query) return true
-      return [
-        row.trackingNumber,
-        row.senderCustomerName,
-        row.currentStatusName,
-        row.routeName,
-      ].filter(Boolean).join(' ').toLowerCase().includes(query)
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+    }, 250)
+    return () => window.clearTimeout(timeout)
+  }, [search])
+
+  const loadBookings = useCallback((signal) => {
+    const dateRange = filter === 'today' ? getTodayBookingRange() : {}
+    return getParcelBookings({
+      page,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch || undefined,
+      filter,
+      ...dateRange,
+      signal,
     })
-  }, [bookings.data, filter, search])
+  }, [debouncedSearch, filter, page])
+  const bookings = useDashboardData(loadBookings)
+  const rows = Array.isArray(bookings.data?.items) ? bookings.data.items : []
 
   return (
     <div className="role-dashboard role-dashboard--booking-agent">
@@ -79,7 +77,10 @@ function BookingAgentBookingsPage() {
             <input
               aria-label="Search parcel bookings"
               className="ui-form-field__control"
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setPageState({ filter, page: 1 })
+                setSearch(event.target.value)
+              }}
               placeholder="Search tracking number, sender, status, or route"
               value={search}
             />
@@ -101,6 +102,13 @@ function BookingAgentBookingsPage() {
             )}
             getRowKey={(row) => row.parcelId}
             rows={rows}
+          />
+          <Pagination
+            currentPage={page}
+            onPageChange={(nextPage) => setPageState({ filter, page: nextPage })}
+            pageCount={bookings.data?.totalPages}
+            pageSize={bookings.data?.pageSize ?? PAGE_SIZE}
+            totalRecords={bookings.data?.totalRecords}
           />
           <div className="booking-agent-list-card__footer my-2">
             <Link className="ui-button ui-button--outline" to="/booking/book-parcel">Create another booking</Link>

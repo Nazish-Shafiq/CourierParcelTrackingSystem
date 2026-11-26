@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Building2, Package, Route, Users } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import DashboardSection from '../../components/common/DashboardSection'
+import DashboardViewAll, { DASHBOARD_PREVIEW_LIMIT } from '../../components/common/DashboardViewAll'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -17,7 +18,12 @@ import {
   getCourierPerformanceReport,
 } from '../../services/dashboardService'
 import { getUsers } from '../../services/userService'
+import {
+  getAdminDelayModelStatus,
+  trainParcelDelayModel,
+} from '../../services/parcelDelayPredictionService'
 import '../../style/admin/admin-dashboard.css'
+import '../../style/admin/ai-operations.css'
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString() : '—'
@@ -168,22 +174,31 @@ function AdminDashboard() {
             {dashboard.data.recentBookings.length === 0
               ? <EmptyState description="No recent parcel bookings were returned." title="No recent bookings" />
               : (
-                <DataTable
-                  caption="Recent parcel bookings"
-                  columns={[
-                    { key: 'trackingNumber', header: 'Tracking number' },
-                    { key: 'senderName', header: 'Sender' },
-                    { key: 'statusName', header: 'Status', render: (row) => <StatusBadge status={row.statusName} /> },
-                    { key: 'bookingDate', header: 'Booked', render: (row) => formatDate(row.bookingDate) },
-                    { key: 'expectedDeliveryDate', header: 'Expected delivery', render: (row) => formatDate(row.expectedDeliveryDate) },
-                  ]}
-                  rows={dashboard.data.recentBookings}
-                  getRowKey={(row) => row.parcelId}
-                />
+                <>
+                  <DataTable
+                    caption="Recent parcel bookings"
+                    columns={[
+                      { key: 'trackingNumber', header: 'Tracking number' },
+                      { key: 'senderName', header: 'Sender' },
+                      { key: 'statusName', header: 'Status', render: (row) => <StatusBadge status={row.statusName} /> },
+                      { key: 'bookingDate', header: 'Booked', render: (row) => formatDate(row.bookingDate) },
+                      { key: 'expectedDeliveryDate', header: 'Expected delivery', render: (row) => formatDate(row.expectedDeliveryDate) },
+                    ]}
+                    rows={dashboard.data.recentBookings.slice(0, DASHBOARD_PREVIEW_LIMIT)}
+                    getRowKey={(row) => row.parcelId}
+                  />
+                  <DashboardViewAll
+                    count={dashboard.data.totalParcels}
+                    label="View all parcel bookings"
+                    to="/admin/parcels"
+                  />
+                </>
               )}
           </DashboardSection>
         </>
       )}
+
+      <AiOperationsSection />
 
       <DashboardSection
         description="Assignment and delivery totals from the courier-performance report."
@@ -199,17 +214,24 @@ function AdminDashboard() {
           performanceReport.data.length === 0
             ? <EmptyState description="No courier performance records were returned." title="No performance data" />
             : (
-              <DataTable
-                caption="Courier assignment and delivery totals"
-                columns={[
-                  { key: 'courierName', header: 'Courier' },
-                  { key: 'employeeCode', header: 'Employee code' },
-                  { key: 'totalAssignedParcels', header: 'Assigned parcels' },
-                  { key: 'deliveredParcels', header: 'Delivered parcels' },
-                ]}
-                rows={performanceReport.data}
-                getRowKey={(row) => row.courierId}
-              />
+              <>
+                <DataTable
+                  caption="Courier assignment and delivery totals"
+                  columns={[
+                    { key: 'courierName', header: 'Courier' },
+                    { key: 'employeeCode', header: 'Employee code' },
+                    { key: 'totalAssignedParcels', header: 'Assigned parcels' },
+                    { key: 'deliveredParcels', header: 'Delivered parcels' },
+                  ]}
+                  rows={performanceReport.data.slice(0, DASHBOARD_PREVIEW_LIMIT)}
+                  getRowKey={(row) => row.courierId}
+                />
+                <DashboardViewAll
+                  count={performanceReport.data.length}
+                  label="View all courier performance"
+                  to="/admin/reports?report=couriers"
+                />
+              </>
             )
         )}
       </DashboardSection>
@@ -228,6 +250,113 @@ function AdminDashboard() {
       </DashboardSection>
     </div>
   )
+}
+
+function AiOperationsSection() {
+  const [isTraining, setIsTraining] = useState(false)
+  const [trainingError, setTrainingError] = useState(null)
+  const loadStatus = useCallback((signal) => getAdminDelayModelStatus(signal), [])
+  const status = useDashboardData(loadStatus)
+
+  async function handleTrain() {
+    setIsTraining(true)
+    setTrainingError(null)
+    try {
+      await trainParcelDelayModel()
+      status.refresh()
+    } catch (error) {
+      setTrainingError(error)
+    } finally {
+      setIsTraining(false)
+    }
+  }
+
+  const modelStatus = status.data
+  const trainingDisabled = !modelStatus?.trainingReady || isTraining || status.isLoading
+
+  return (
+    <DashboardSection
+      action={(
+        <button
+          className="btn btn-primary"
+          disabled={trainingDisabled}
+          onClick={handleTrain}
+          type="button"
+        >
+          {isTraining ? 'Training…' : 'Train / re-evaluate model'}
+        </button>
+      )}
+      description="Model readiness, held-out evaluation, and recorded prediction activity."
+      title="AI operations"
+    >
+      {status.isLoading && !modelStatus && (
+        <LoadingSpinner label="Loading AI model status" size="small" />
+      )}
+      {status.error && (
+        <ErrorMessage error={status.error} onRetry={status.refresh} />
+      )}
+      {trainingError && <ErrorMessage error={trainingError} />}
+      {modelStatus && (
+        <>
+          <p className="ai-operations__readiness" role="status">
+            {modelStatus.isModelAvailable
+              ? modelStatus.evaluationAvailable
+                ? `Evaluated model available. ${modelStatus.algorithm}.`
+                : `Trained model available without a held-out evaluation. ${modelStatus.algorithm}.`
+              : 'No trained delay model is currently available.'}
+            {' '}
+            {modelStatus.readinessMessage}
+            {modelStatus.lastTrainingStatus && (
+              <>
+                {' '}
+                Latest training attempt: {modelStatus.lastTrainingStatus.toLowerCase()}.
+                {modelStatus.lastTrainingMessage && ` ${modelStatus.lastTrainingMessage}`}
+              </>
+            )}
+          </p>
+          <p className="ai-operations__evaluation" role="status">
+            {modelStatus.evaluationMessage}
+          </p>
+          <div className="ai-operations__grid">
+            <div><span>Total completed deliveries</span><strong>{modelStatus.totalCompletedDeliveries}</strong></div>
+            <div><span>On-time deliveries</span><strong>{modelStatus.onTimeDeliveries}</strong></div>
+            <div><span>Delayed deliveries</span><strong>{modelStatus.delayedDeliveries}</strong></div>
+            <div><span>On-time delivery rate</span><strong>{formatPercent(modelStatus.onTimeDeliveryPercentage)}</strong></div>
+            <div><span>Delayed delivery rate</span><strong>{formatPercent(modelStatus.delayedDeliveryPercentage)}</strong></div>
+            <div><span>Average delivery duration</span><strong>{formatDuration(modelStatus.averageDeliveryDurationHours)}</strong></div>
+          </div>
+          <h3 className="ai-operations__subheading">Training and evaluation</h3>
+          <div className="ai-operations__grid">
+            <div><span>Valid training records</span><strong>{modelStatus.validTrainingSamples}</strong></div>
+            <div><span>On-time / delayed</span><strong>{modelStatus.onTimeSamples} / {modelStatus.delayedSamples}</strong></div>
+            <div><span>Completed predictions</span><strong>{modelStatus.completedPredictionCount}</strong></div>
+            <div><span>Training status</span><strong>{modelStatus.lastTrainingStatus ?? 'Not attempted'}</strong></div>
+            <div><span>Last trained</span><strong>{formatDate(modelStatus.lastTrainedAt)}</strong></div>
+            <div><span>Accuracy</span><strong>{formatEvaluationMetric(modelStatus.accuracy, modelStatus.evaluationAvailable)}</strong></div>
+            <div><span>ROC AUC</span><strong>{formatEvaluationMetric(modelStatus.areaUnderRocCurve, modelStatus.evaluationAvailable)}</strong></div>
+            <div><span>F1 score</span><strong>{formatEvaluationMetric(modelStatus.f1Score, modelStatus.evaluationAvailable)}</strong></div>
+            <div><span>Precision / recall</span><strong>{formatEvaluationMetric(modelStatus.precision, modelStatus.evaluationAvailable)} / {formatEvaluationMetric(modelStatus.recall, modelStatus.evaluationAvailable)}</strong></div>
+          </div>
+        </>
+      )}
+    </DashboardSection>
+  )
+}
+
+function formatMetric(value) {
+  return Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '—'
+}
+
+function formatEvaluationMetric(value, evaluationAvailable) {
+  return evaluationAvailable ? formatMetric(value) : 'Unavailable'
+}
+
+function formatPercent(value) {
+  return Number.isFinite(value) ? `${value.toFixed(1)}%` : '—'
+}
+
+function formatDuration(value) {
+  return Number.isFinite(value) ? `${value.toFixed(1)} hours` : '—'
 }
 
 export default AdminDashboard

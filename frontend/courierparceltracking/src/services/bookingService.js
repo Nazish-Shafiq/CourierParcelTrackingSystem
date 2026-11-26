@@ -2,9 +2,24 @@ import axiosInstance from './api/axiosInstance'
 import { API_PATHS } from './api/apiConfig'
 import { getResponseData } from './api/baseResponse'
 
-export async function getParcelBookings({ page = 1, pageSize = 10, search, signal } = {}) {
+export async function getParcelBookings({
+  page = 1,
+  pageSize = 10,
+  search,
+  filter,
+  fromBookingDate,
+  beforeBookingDate,
+  signal,
+} = {}) {
   const response = await axiosInstance.get(API_PATHS.parcelBookings, {
-    params: { page, pageSize, search },
+    params: {
+      page,
+      pageSize,
+      search,
+      filter,
+      fromBookingDate,
+      beforeBookingDate,
+    },
     signal,
   })
   return getResponseData(response.data)

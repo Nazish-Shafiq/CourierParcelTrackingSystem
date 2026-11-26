@@ -40,6 +40,13 @@ public class ParcelRepository : IParcelRepository
         return (total, booked, delivered);
     }
 
+    public Task<List<ParcelStatus>> GetCustomerParcelStatusesAsync(int userId) =>
+        CustomerParcelQuery(userId)
+            .Select(parcel => parcel.CurrentStatus)
+            .Distinct()
+            .OrderBy(status => status.StatusName)
+            .ToListAsync();
+
     public async Task<PagedResponseDto<Parcel>> GetCustomerParcelsAsync(
         int userId,
         PaginationRequestDto pagination,
@@ -47,6 +54,9 @@ public class ParcelRepository : IParcelRepository
         string? statusCode)
     {
         IQueryable<Parcel> query = CustomerParcelQuery(userId)
+            .Include(p => p.SenderCustomer)
+            .Include(p => p.CurrentStatus)
+            .Include(p => p.ParcelRecipient)
             .Include(p => p.Route)
                 .ThenInclude(r => r!.OriginHub)
             .Include(p => p.Route)
@@ -100,6 +110,8 @@ public class ParcelRepository : IParcelRepository
 
     private IQueryable<Parcel> CustomerParcelDetailsQuery(int userId) =>
         CustomerParcelQuery(userId)
+            .Include(p => p.SenderCustomer)
+            .Include(p => p.CurrentStatus)
             .Include(p => p.ParcelRecipient)
             .Include(p => p.CurrentHub)
             .Include(p => p.Route)
@@ -124,9 +136,7 @@ public class ParcelRepository : IParcelRepository
                 p.SenderCustomer.UserId == userId &&
                 p.SenderCustomer.User != null &&
                 p.SenderCustomer.User.IsActive &&
-                !p.SenderCustomer.User.IsDeleted)
-            .Include(p => p.SenderCustomer)
-            .Include(p => p.CurrentStatus);
+                !p.SenderCustomer.User.IsDeleted);
 
     public Task<bool> CustomerExistsAsync(int customerId) =>
         _context.Customers.AnyAsync(c => c.CustomerId == customerId && c.IsActive && !c.IsDeleted);

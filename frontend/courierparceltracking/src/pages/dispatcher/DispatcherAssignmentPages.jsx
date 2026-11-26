@@ -348,7 +348,7 @@ function DispatcherAssignParcelPage() {
 
                 <Link
                   className="ui-button ui-button--outline"
-                  to="/dispatch/unassigned"
+                  to="/dispatch/unassigned-parcels"
                 >
                   View unassigned parcels
                 </Link>
@@ -359,7 +359,7 @@ function DispatcherAssignParcelPage() {
             <div className="dispatcher-form__empty-action">
               <Link
                 className="ui-button ui-button--outline"
-                to="/dispatch/unassigned"
+                to="/dispatch/unassigned-parcels"
               >
                 Review unassigned parcels
               </Link>

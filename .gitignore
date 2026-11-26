@@ -1,4 +1,5 @@
 /backend/CourierParcelTrackingSystem.API/
+/backend/CourierParcelTrackingSystemAPI/App_Data/MLModels/
 # Ignore complete Backend API project
 
 # Ignore Visual Studio temporary files

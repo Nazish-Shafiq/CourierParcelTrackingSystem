@@ -18,9 +18,19 @@ public class ParcelBookingService : IParcelBookingService
 
     // Retrieve paginated parcel bookings.
     public async Task<PagedResponseDto<ParcelBookingResponseDto>>
-        GetPagedAsync(PaginationRequestDto pagination, string? search)
+        GetPagedAsync(
+            PaginationRequestDto pagination,
+            string? search,
+            string? filter,
+            DateTime? fromBookingDate,
+            DateTime? beforeBookingDate)
     {
-        var result = await _repository.GetPagedAsync(pagination, search);
+        var result = await _repository.GetPagedAsync(
+            pagination,
+            search,
+            filter,
+            fromBookingDate,
+            beforeBookingDate);
 
         return new PagedResponseDto<ParcelBookingResponseDto>
         {

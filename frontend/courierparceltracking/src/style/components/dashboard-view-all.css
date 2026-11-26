@@ -1,0 +1,31 @@
+.dashboard-view-all {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.dashboard-view-all__link {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-brand);
+  display: inline-flex;
+  font-size: 0.85rem;
+  font-weight: 650;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.85rem;
+  text-decoration: none;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.dashboard-view-all__link:hover {
+  background: var(--color-info-bg);
+  border-color: var(--color-brand);
+  color: var(--color-brand-hover, var(--color-heading));
+}
+
+.dashboard-view-all__link:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}

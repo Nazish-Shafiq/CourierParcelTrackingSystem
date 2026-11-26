@@ -17,6 +17,7 @@ export const API_PATHS = Object.freeze({
   parcelTracking: '/parcel-tracking',
   routes: '/Route',
   dashboard: '/dashboard',
+  parcelDelayPredictions: '/parcel-delay-predictions',
   customerDashboard: '/customer-dashboard',
   reports: '/reports',
   screenAssignments: '/screen-assignments',

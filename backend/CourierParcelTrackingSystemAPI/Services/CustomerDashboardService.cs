@@ -18,11 +18,17 @@ public class CustomerDashboardService : ICustomerDashboardService
     public async Task<CustomerDashboardSummaryDto> GetSummaryAsync(int userId)
     {
         var counts = await _repository.GetCustomerParcelCountsAsync(userId);
+        var statuses = await _repository.GetCustomerParcelStatusesAsync(userId);
         return new CustomerDashboardSummaryDto
         {
             TotalParcels = counts.TotalParcels,
             BookedParcels = counts.BookedParcels,
-            DeliveredParcels = counts.DeliveredParcels
+            DeliveredParcels = counts.DeliveredParcels,
+            AvailableStatuses = statuses.Select(status => new CustomerParcelStatusOptionDto
+            {
+                StatusCode = status.StatusCode,
+                StatusName = status.StatusName
+            }).ToList()
         };
     }
 
@@ -71,6 +77,10 @@ public class CustomerDashboardService : ICustomerDashboardService
     {
         ParcelId = parcel.ParcelId,
         TrackingNumber = parcel.TrackingNumber,
+        SenderName = parcel.SenderCustomer.FullName,
+        ReceiverName = parcel.ParcelRecipient is { IsActive: true, IsDeleted: false }
+            ? parcel.ParcelRecipient.RecipientName
+            : null,
         BookingDate = parcel.BookingDate,
         OriginHubName = parcel.Route?.OriginHub?.HubName,
         DestinationHubName = parcel.Route?.DestinationHub?.HubName,

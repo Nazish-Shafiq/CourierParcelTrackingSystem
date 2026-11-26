@@ -37,6 +37,7 @@ import {
   CourierParcelTrackingPage,
 } from "./pages/courier/CourierParcelPages";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import CustomerParcelsPage from "./pages/customer/CustomerParcelsPage";
 import CustomerParcelDetailsPage from "./pages/customer/CustomerParcelDetailsPage";
 import DispatcherDashboard from "./pages/dispatcher/DispatcherDashboard";
 import {
@@ -210,6 +211,10 @@ function AppRoutes() {
               element={<DispatcherUnassignedParcelsPage />}
             />
             <Route
+              path="dispatch/unassigned"
+              element={<DispatcherUnassignedParcelsPage />}
+            />
+            <Route
               path="dispatch/assign"
               element={<DispatcherAssignParcelPage />}
             />
@@ -255,6 +260,10 @@ function AppRoutes() {
             }
           >
             <Route path="dashboard/customer" element={<CustomerDashboard />} />
+            <Route
+              path="customer/parcels"
+              element={<CustomerParcelsPage />}
+            />
             <Route
               path="dashboard/customer/parcels/:parcelId"
               element={<CustomerParcelDetailsPage />}

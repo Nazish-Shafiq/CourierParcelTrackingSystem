@@ -167,25 +167,25 @@
 }
 
 .ui-button {
-  text-decoration: none;
-  display: inline-flex;
-  min-height: 2.45rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.9rem;
-  border: 1px solid transparent;
-  border-radius: 0.55rem;
-  font: inherit;
-  font-size: 0.84rem;
-  font-weight: 600;
-  line-height: 1.15;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  min-height: 2.45rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  padding: 0.55rem 0.9rem !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.55rem !important;
+  font: inherit !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  line-height: 1.15 !important;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease !important;
 }
 
 .ui-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+  cursor: not-allowed !important ;
+  opacity: 0.6 !important;
 }
 
 .ui-button--primary {
@@ -195,8 +195,8 @@
 }
 
 .ui-button--primary:hover:not(:disabled) {
-  border-color: var(--color-brand-dark);
-  background: var(--color-brand-dark);
+  border-color: var(--color-brand-dark) !important;
+  background: var(--color-brand-dark) !important;
 }
 
 .ui-button--secondary,

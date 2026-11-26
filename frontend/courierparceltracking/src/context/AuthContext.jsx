@@ -31,7 +31,9 @@ function AuthProvider({ children }) {
           if (error.status === 404) clearAccessToken()
           setUser(null)
           setStatus('unauthenticated')
-          setAuthError(error)
+          setAuthError(error.status === 401
+            ? new Error('Your session is no longer valid. Please sign in again.')
+            : error)
         })
     }
 

@@ -19,7 +19,10 @@ public class ParcelBookingRepository : IParcelBookingRepository
     // Retrieve paginated parcel bookings.
     public async Task<PagedResponseDto<Parcel>> GetPagedAsync(
         PaginationRequestDto pagination,
-        string? search)
+        string? search,
+        string? filter,
+        DateTime? fromBookingDate,
+        DateTime? beforeBookingDate)
     {
         int page = Math.Max(1, pagination.Page);
         int pageSize = Math.Clamp(pagination.PageSize, 1, 100);
@@ -40,7 +43,41 @@ public class ParcelBookingRepository : IParcelBookingRepository
                 p.TrackingNumber.Contains(search) ||
                 p.SenderCustomer.FullName.Contains(search) ||
                 (p.ParcelRecipient != null &&
-                 p.ParcelRecipient.RecipientName.Contains(search)));
+                 p.ParcelRecipient.RecipientName.Contains(search)) ||
+                p.CurrentStatus.StatusName.Contains(search) ||
+                (p.Route != null && p.Route.RouteName.Contains(search)));
+        }
+
+        switch (filter?.Trim().ToLowerInvariant())
+        {
+            case "today":
+            {
+                DateTime startOfDay = fromBookingDate ?? DateTime.UtcNow.Date;
+                DateTime endOfDay = beforeBookingDate ?? startOfDay.AddDays(1);
+                query = query.Where(p =>
+                    p.BookingDate >= startOfDay &&
+                    p.BookingDate < endOfDay);
+                break;
+            }
+            case "pending":
+                query = query.Where(p =>
+                    p.CurrentStatus.StatusName.ToLower() == "booked" ||
+                    p.CurrentStatus.StatusName.ToLower() == "pending");
+                break;
+            case "transit":
+                query = query.Where(p =>
+                    p.CurrentStatus.StatusName.ToLower() == "in transit" ||
+                    p.CurrentStatus.StatusName.ToLower() == "out for delivery");
+                break;
+            case "delivered":
+                query = query.Where(p =>
+                    p.CurrentStatus.StatusName.ToLower() == "delivered");
+                break;
+            case "failed":
+                query = query.Where(p =>
+                    p.CurrentStatus.StatusName.ToLower() == "delivery attempted" ||
+                    p.CurrentStatus.StatusName.ToLower().Contains("failed"));
+                break;
         }
 
         int totalRecords = await query.CountAsync();

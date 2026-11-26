@@ -29,9 +29,17 @@ public class ParcelBookingController : ControllerBase
         "/dashboard/booking-agent")]
     public async Task<IActionResult> GetAll(
         [FromQuery] PaginationRequestDto pagination,
-        [FromQuery] string? search)
+        [FromQuery] string? search,
+        [FromQuery] string? filter,
+        [FromQuery] DateTime? fromBookingDate,
+        [FromQuery] DateTime? beforeBookingDate)
     {
-        var result = await _service.GetPagedAsync(pagination, search);
+        var result = await _service.GetPagedAsync(
+            pagination,
+            search,
+            filter,
+            fromBookingDate,
+            beforeBookingDate);
 
         return Ok(
             ApiResponse<PagedResponseDto<ParcelBookingResponseDto>>.Ok(

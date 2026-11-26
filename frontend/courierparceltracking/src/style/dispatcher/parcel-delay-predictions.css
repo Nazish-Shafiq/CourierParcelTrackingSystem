@@ -1,0 +1,61 @@
+.delay-predictions__notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid var(--color-brand);
+  color: var(--color-muted);
+  background: var(--color-surface-subtle);
+}
+
+.delay-predictions__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.delay-predictions__filters label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(100%, 14rem);
+}
+
+.delay-predictions__filters input,
+.delay-predictions__filters select {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.delay-risk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.delay-risk-badge--high {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.delay-risk-badge--medium {
+  color: #825b00;
+  background: #fff3cd;
+}
+
+.delay-risk-badge--low {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+@media (max-width: 600px) {
+  .delay-predictions__filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

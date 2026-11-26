@@ -35,7 +35,7 @@ public class GlobalExceptionMiddleware
                 UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Authentication is required or the supplied credentials are invalid."),
                 InvalidOperationException => (HttpStatusCode.Conflict, ex.Message),
                 DbUpdateConcurrencyException => (HttpStatusCode.Conflict, "The record was changed by another operation."),
-                DbUpdateException => (HttpStatusCode.Conflict, "The database rejected the operation. Check unique and foreign-key constraints."),
+                DbUpdateException => (HttpStatusCode.Conflict, "A database constraint rejected the write. Server logs contain the constraint details."),
                 _ => (HttpStatusCode.InternalServerError, "An unexpected server error occurred.")
             };
 

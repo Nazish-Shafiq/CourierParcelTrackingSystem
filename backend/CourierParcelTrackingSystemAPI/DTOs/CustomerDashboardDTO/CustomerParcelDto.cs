@@ -4,6 +4,8 @@ public class CustomerParcelDto
 {
     public long ParcelId { get; set; }
     public string TrackingNumber { get; set; } = string.Empty;
+    public string SenderName { get; set; } = string.Empty;
+    public string? ReceiverName { get; set; }
     public DateTime BookingDate { get; set; }
     public string? OriginHubName { get; set; }
     public string? DestinationHubName { get; set; }

@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { ClipboardList, Package, PackageCheck, PackageSearch, Truck, Users } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import DashboardSection from '../../components/common/DashboardSection'
+import DashboardViewAll, { DASHBOARD_PREVIEW_LIMIT } from '../../components/common/DashboardViewAll'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
@@ -20,6 +21,11 @@ function normalizeList(data) {
   if (Array.isArray(data)) return data
   if (data && Array.isArray(data.items)) return data.items
   return []
+}
+
+function getRecordCount(data) {
+  if (Number.isFinite(data?.totalRecords)) return data.totalRecords
+  return normalizeList(data).length
 }
 
 function getStatusKey(value = '') {
@@ -50,7 +56,9 @@ function BookingAgentDashboard() {
 
     return {
       customers: normalizeList(customersResult),
+      customersTotal: getRecordCount(customersResult),
       bookings: normalizeList(bookingsResult),
+      bookingsTotal: getRecordCount(bookingsResult),
       parcels: normalizeList(parcelsResult),
     }
   }, [])
@@ -74,17 +82,18 @@ function BookingAgentDashboard() {
 
     return {
       totalParcels: parcels.length,
-      totalCustomers: customers.length,
+      totalCustomers: dashboard.data?.customersTotal ?? customers.length,
+      totalBookings: dashboard.data?.bookingsTotal ?? bookings.length,
       todaysBookings: parcels.filter((parcel) => isSameDay(parcel.bookingDate)).length,
       pendingParcels: (statusCounts.booked ?? 0) + (statusCounts.pending ?? 0) + (statusCounts['pending pickup'] ?? 0),
       inTransitParcels: (statusCounts['in transit'] ?? 0) + (statusCounts.in_transit ?? 0) + (statusCounts['out for delivery'] ?? 0),
       deliveredParcels: (statusCounts.delivered ?? 0) + (statusCounts['delivery complete'] ?? 0),
       failedDeliveries: (statusCounts.failed ?? 0) + (statusCounts['failed delivery'] ?? 0) + (statusCounts['delivery failed'] ?? 0),
-      recentBookings: bookings.slice(0, 5),
+      recentBookings: bookings.slice(0, DASHBOARD_PREVIEW_LIMIT),
       recentCustomers: customers
         .slice()
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5),
+        .slice(0, DASHBOARD_PREVIEW_LIMIT),
       statusOverview: Object.entries(statusCounts).map(([name, total]) => ({ statusName: name, total })),
     }
   }, [dashboard.data])
@@ -141,18 +150,25 @@ function BookingAgentDashboard() {
             {summary.recentBookings.length === 0
               ? <EmptyState description="No recent bookings were returned by the booking API." title="No recent bookings" />
               : (
-                <DataTable
-                  caption="Recent parcel bookings"
-                  columns={[
-                    { key: 'trackingNumber', header: 'Tracking number' },
-                    { key: 'senderCustomerName', header: 'Sender' },
-                    { key: 'currentStatusName', header: 'Status', render: (row) => <StatusBadge status={row.currentStatusName} /> },
-                    { key: 'bookingDate', header: 'Booked', render: (row) => formatDate(row.bookingDate) },
-                    { key: 'totalWeightKg', header: 'Weight', render: (row) => `${row.totalWeightKg} kg` },
-                  ]}
-                  rows={summary.recentBookings}
-                  getRowKey={(row) => row.parcelId}
-                />
+                <>
+                  <DataTable
+                    caption="Recent parcel bookings"
+                    columns={[
+                      { key: 'trackingNumber', header: 'Tracking number' },
+                      { key: 'senderCustomerName', header: 'Sender' },
+                      { key: 'currentStatusName', header: 'Status', render: (row) => <StatusBadge status={row.currentStatusName} /> },
+                      { key: 'bookingDate', header: 'Booked', render: (row) => formatDate(row.bookingDate) },
+                      { key: 'totalWeightKg', header: 'Weight', render: (row) => `${row.totalWeightKg} kg` },
+                    ]}
+                    rows={summary.recentBookings}
+                    getRowKey={(row) => row.parcelId}
+                  />
+                  <DashboardViewAll
+                    count={summary.totalBookings}
+                    label="View all parcel bookings"
+                    to="/booking/bookings?filter=all"
+                  />
+                </>
               )}
           </DashboardSection>
 
@@ -160,17 +176,24 @@ function BookingAgentDashboard() {
             {summary.recentCustomers.length === 0
               ? <EmptyState description="No customer registrations were returned by the customer API." title="No recent registrations" />
               : (
-                <DataTable
-                  caption="Recent customer registrations"
-                  columns={[
-                    { key: 'fullName', header: 'Customer' },
-                    { key: 'phone', header: 'Phone' },
-                    { key: 'city', header: 'City' },
-                    { key: 'createdAt', header: 'Registered', render: (row) => formatDate(row.createdAt) },
-                  ]}
-                  rows={summary.recentCustomers}
-                  getRowKey={(row) => row.customerId}
-                />
+                <>
+                  <DataTable
+                    caption="Recent customer registrations"
+                    columns={[
+                      { key: 'fullName', header: 'Customer' },
+                      { key: 'phone', header: 'Phone' },
+                      { key: 'city', header: 'City' },
+                      { key: 'createdAt', header: 'Registered', render: (row) => formatDate(row.createdAt) },
+                    ]}
+                    rows={summary.recentCustomers}
+                    getRowKey={(row) => row.customerId}
+                  />
+                  <DashboardViewAll
+                    count={summary.totalCustomers}
+                    label="View all customers"
+                    to="/booking/customers"
+                  />
+                </>
               )}
           </DashboardSection>
 

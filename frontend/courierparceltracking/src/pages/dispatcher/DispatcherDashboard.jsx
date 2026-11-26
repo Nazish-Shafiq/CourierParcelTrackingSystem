@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { CircleDashed, ClipboardList, Package, PackageCheck, Truck } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import DashboardSection from '../../components/common/DashboardSection'
+import DashboardViewAll, { DASHBOARD_PREVIEW_LIMIT } from '../../components/common/DashboardViewAll'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -13,7 +14,9 @@ import DataTable from '../../components/tables/DataTable'
 import { ROLE_NAMES, ROLE_NAVIGATION } from '../../constants/navigation'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import { getDispatcherDashboard } from '../../services/dashboardService'
+import { getDispatcherDelayPredictions } from '../../services/parcelDelayPredictionService'
 import '../../style/dispatcher/dispatcher-dashboard.css'
+import '../../style/dispatcher/parcel-delay-predictions.css'
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : '—'
@@ -100,6 +103,11 @@ function DispatcherDashboard() {
                 rows={data.recentAssignments}
                 getRowKey={(row) => row.parcelAssignmentId}
               />
+              <DashboardViewAll
+                count={data.activeAssignments}
+                label="View all active assignments"
+                to="/dispatch/assignments?active=true"
+              />
             </DashboardSection>
 
             <DashboardSection title="Parcels awaiting assignment">
@@ -119,6 +127,11 @@ function DispatcherDashboard() {
                 )}
                 rows={data.recentUnassignedParcels}
                 getRowKey={(row) => row.parcelId}
+              />
+              <DashboardViewAll
+                count={data.unassignedParcels}
+                label="View all unassigned parcels"
+                to="/dispatch/unassigned-parcels"
               />
             </DashboardSection>
           </div>
@@ -141,6 +154,133 @@ function DispatcherDashboard() {
 
         </>
       )}
+
+      <ParcelDelayPredictionSection />
+    </div>
+  )
+}
+
+function ParcelDelayPredictionSection() {
+  const [searchParams] = useSearchParams()
+  const showAll = searchParams.get('predictions') === 'all'
+  const [search, setSearch] = useState('')
+  const [riskFilter, setRiskFilter] = useState('All')
+  const loadPredictions = useCallback(
+    (signal) => getDispatcherDelayPredictions(signal),
+    [],
+  )
+  const predictions = useDashboardData(loadPredictions)
+  const filteredPredictions = useMemo(() => {
+    const rows = predictions.data?.predictions ?? []
+    const normalizedSearch = search.trim().toLowerCase()
+    return rows.filter((row) => (
+      (riskFilter === 'All' || row.riskLevel === riskFilter)
+      && (!normalizedSearch || row.trackingNumber.toLowerCase().includes(normalizedSearch))
+    ))
+  }, [predictions.data, riskFilter, search])
+
+  return (
+    <div id="parcel-delay-predictions">
+      <DashboardSection
+        description="Use evaluated delivery history to prioritize at-risk parcels. Predictions never change assignments or parcel status."
+        title="Parcel delay predictions"
+      >
+      {predictions.isLoading && !predictions.data && (
+        <LoadingSpinner label="Loading parcel delay predictions" size="small" />
+      )}
+      {predictions.error && (
+        <ErrorMessage error={predictions.error} onRetry={predictions.refresh} />
+      )}
+      {predictions.data && !predictions.data.isModelAvailable && (
+        <EmptyState
+          description={predictions.data.message}
+          title="Predictions unavailable"
+        />
+      )}
+      {predictions.data?.isModelAvailable && (
+        <>
+          <p className="delay-predictions__notice" role="status">
+            {predictions.data.message}
+          </p>
+          <div className="delay-predictions__filters">
+            <label>
+              <span>Search tracking number</span>
+              <input
+                aria-label="Search predictions by tracking number"
+                onChange={(event) => setSearch(event.target.value)}
+                type="search"
+                value={search}
+              />
+            </label>
+            <label>
+              <span>Risk level</span>
+              <select
+                aria-label="Filter predictions by risk"
+                onChange={(event) => setRiskFilter(event.target.value)}
+                value={riskFilter}
+              >
+                <option>All</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </label>
+          </div>
+          {filteredPredictions.length === 0 ? (
+            <EmptyState
+              description={predictions.data.predictions.length === 0
+                ? 'There are no undelivered parcels with complete route and schedule data.'
+                : 'No parcels match the selected search and risk filters.'}
+              title="No matching predictions"
+            />
+          ) : (
+            <>
+              <DataTable
+                caption="Parcel delay risk predictions"
+                columns={[
+                  { key: 'trackingNumber', header: 'Tracking number' },
+                  { key: 'routeName', header: 'Route' },
+                  {
+                    key: 'hubs',
+                    header: 'Origin → destination',
+                    render: (row) => `${row.originHubName} → ${row.destinationHubName}`,
+                  },
+                  {
+                    key: 'expectedDeliveryDate',
+                    header: 'Expected delivery',
+                    render: (row) => formatDate(row.expectedDeliveryDate),
+                  },
+                  {
+                    key: 'riskLevel',
+                    header: 'Delay risk',
+                    render: (row) => (
+                      <span className={`delay-risk-badge delay-risk-badge--${row.riskLevel.toLowerCase()}`}>
+                        {row.riskLevel}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'delayProbability',
+                    header: 'Probability',
+                    render: (row) => `${(row.delayProbability * 100).toFixed(1)}%`,
+                  },
+                ]}
+                emptyState={<EmptyState title="No eligible parcels" />}
+                getRowKey={(row) => row.parcelId}
+                rows={showAll
+                  ? filteredPredictions
+                  : filteredPredictions.slice(0, DASHBOARD_PREVIEW_LIMIT)}
+              />
+              <DashboardViewAll
+                count={filteredPredictions.length}
+                label="View all delay predictions"
+                to="/dashboard/dispatcher?predictions=all#parcel-delay-predictions"
+              />
+            </>
+          )}
+        </>
+      )}
+      </DashboardSection>
     </div>
   )
 }

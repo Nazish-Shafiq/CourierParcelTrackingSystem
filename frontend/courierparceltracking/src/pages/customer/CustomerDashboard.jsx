@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import Button from '../../components/common/Button'
 import DashboardSection from '../../components/common/DashboardSection'
+import DashboardViewAll, { DASHBOARD_PREVIEW_LIMIT } from '../../components/common/DashboardViewAll'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
@@ -13,7 +14,6 @@ import SearchBar from '../../components/common/SearchBar'
 import StatusBadge from '../../components/common/StatusBadge'
 import FormInput from '../../components/forms/FormInput'
 import DataTable from '../../components/tables/DataTable'
-import Pagination from '../../components/tables/Pagination'
 import { useDashboardData } from '../../hooks/useDashboardData'
 import {
   getCustomerParcelByTrackingNumber,
@@ -22,7 +22,7 @@ import {
 } from '../../services/customerDashboardService'
 import '../../style/customer/customer-dashboard.css'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = DASHBOARD_PREVIEW_LIMIT
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleDateString() : '—'
@@ -31,7 +31,6 @@ function formatDate(value) {
 function CustomerDashboard() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('')
-  const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [trackingNumber, setTrackingNumber] = useState('')
   const [trackError, setTrackError] = useState(null)
@@ -41,7 +40,7 @@ function CustomerDashboard() {
     const [summary, parcels] = await Promise.all([
       getCustomerDashboardStats(signal),
       getCustomerParcels({
-        page,
+        page: 1,
         pageSize: PAGE_SIZE,
         search,
         statusCode: filter || undefined,
@@ -50,14 +49,13 @@ function CustomerDashboard() {
     ])
 
     return { summary, parcels }
-  }, [filter, page, search])
+  }, [filter, search])
 
   const dashboard = useDashboardData(loadDashboard)
   const summary = dashboard.data?.summary
   const parcels = dashboard.data?.parcels
 
   function applyFilter(statusCode) {
-    setPage(1)
     setFilter(statusCode)
   }
 
@@ -80,6 +78,12 @@ function CustomerDashboard() {
       setIsTracking(false)
     }
   }
+
+  const viewAllParams = new URLSearchParams()
+  if (search.trim()) viewAllParams.set('search', search.trim())
+  if (filter) viewAllParams.set('statusCode', filter)
+  const viewAllQuery = viewAllParams.toString()
+  const viewAllPath = `/customer/parcels${viewAllQuery ? `?${viewAllQuery}` : ''}`
 
   return (
     <div className="role-dashboard role-dashboard--customer">
@@ -152,7 +156,6 @@ function CustomerDashboard() {
             <SearchBar
               label="Search your parcels"
               onChange={(value) => {
-                setPage(1)
                 setSearch(value)
               }}
               placeholder="Search tracking number, hub, or status"
@@ -196,14 +199,12 @@ function CustomerDashboard() {
                 View Details
               </Link>
             )}
-            rows={parcels.items ?? []}
+            rows={(parcels.items ?? []).slice(0, DASHBOARD_PREVIEW_LIMIT)}
           />
-          <Pagination
-            currentPage={page}
-            onPageChange={setPage}
-            pageCount={parcels.totalPages}
-            pageSize={parcels.pageSize}
-            totalRecords={parcels.totalRecords}
+          <DashboardViewAll
+            count={parcels.totalRecords}
+            label="View all matching parcels"
+            to={viewAllPath}
           />
         </DashboardSection>
       )}

@@ -10,6 +10,12 @@
   margin-bottom: 1rem;
 }
 
+.customer-dashboard__results-count {
+  margin: 0 0 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
 .customer-dashboard__track-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

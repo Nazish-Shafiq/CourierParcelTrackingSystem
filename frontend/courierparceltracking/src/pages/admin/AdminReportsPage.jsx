@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import DashboardStatCard from '../../components/cards/DashboardStatCard'
 import EmptyState from '../../components/common/EmptyState'
@@ -219,7 +220,11 @@ function downloadCsv(report, rows) {
 }
 
 function AdminReportsPage() {
-  const [reportKey, setReportKey] = useState('parcels')
+  const [searchParams] = useSearchParams()
+  const requestedReport = searchParams.get('report')
+  const [reportKey, setReportKey] = useState(() => (
+    REPORTS[requestedReport] ? requestedReport : 'parcels'
+  ))
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [reportRows, setReportRows] = useState([])
@@ -231,6 +236,7 @@ function AdminReportsPage() {
   const [filterValue, setFilterValue] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const controllerRef = useRef(null)
+  const shouldAutoRunRef = useRef(Boolean(REPORTS[requestedReport]))
   const report = REPORTS[reportKey]
 
   useEffect(() => () => controllerRef.current?.abort(), [])
@@ -256,7 +262,7 @@ function AdminReportsPage() {
 
   const pageRows = filteredRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
-  async function loadReport() {
+  const loadReport = useCallback(async () => {
     if (report.dateFiltered && fromDate && toDate && fromDate > toDate) {
       controllerRef.current?.abort()
       setIsLoading(false)
@@ -290,7 +296,13 @@ function AdminReportsPage() {
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }
-  }
+  }, [fromDate, report, toDate])
+
+  useEffect(() => {
+    if (!shouldAutoRunRef.current) return
+    shouldAutoRunRef.current = false
+    void loadReport()
+  }, [loadReport])
 
   function resetReport() {
     controllerRef.current?.abort()
