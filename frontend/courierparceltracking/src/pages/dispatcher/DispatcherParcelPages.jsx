@@ -204,6 +204,9 @@ function DispatcherParcelListPage({ unassignedOnly = false }) {
               <div><dt>Sender</dt><dd>{selectedParcel.senderName}</dd></div>
               <div><dt>Status</dt><dd>{selectedParcel.currentStatus}</dd></div>
               <div><dt>Route</dt><dd>{formatValue(selectedParcel.routeName)}</dd></div>
+              <div><dt>Origin hub</dt><dd>{formatValue(selectedParcel.originHubName)}</dd></div>
+              <div><dt>Destination hub</dt><dd>{formatValue(selectedParcel.destinationHubName)}</dd></div>
+              <div><dt>Current hub</dt><dd>{formatValue(selectedParcel.currentHubName)}</dd></div>
               <div><dt>Weight</dt><dd>{selectedParcel.totalWeightKg} kg</dd></div>
               <div><dt>Booked</dt><dd>{formatDate(selectedParcel.bookingDate)}</dd></div>
               <div><dt>Expected delivery</dt><dd>{formatDate(selectedParcel.expectedDeliveryDate)}</dd></div>

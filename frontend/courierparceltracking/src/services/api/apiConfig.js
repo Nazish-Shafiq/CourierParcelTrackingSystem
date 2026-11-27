@@ -21,6 +21,7 @@ export const API_PATHS = Object.freeze({
   customerDashboard: '/customer-dashboard',
   reports: '/reports',
   screenAssignments: '/screen-assignments',
+  auditLogs: '/audit-logs',
 })
 
 export const AUTH_API_PATH = API_PATHS.auth

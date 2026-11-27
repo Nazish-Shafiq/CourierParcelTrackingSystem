@@ -21,6 +21,7 @@ import {
   AdminUsersPage,
 } from "./pages/admin/AdminManagementPages";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminAuditLogsPage from "./pages/admin/AdminAuditLogsPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import BookingAgentBookParcelPage from "./pages/bookingAgent/BookingAgentBookParcelPage";
 import BookingAgentBookingsPage from "./pages/bookingAgent/BookingAgentBookingsPage";
@@ -156,6 +157,7 @@ function AppRoutes() {
             />
             <Route path="admin/routes" element={<AdminRoutesPage />} />
             <Route path="admin/reports" element={<AdminReportsPage />} />
+            <Route path="admin/audit-logs" element={<AdminAuditLogsPage />} />
             <Route
               path="admin/screen-assignments"
               element={(

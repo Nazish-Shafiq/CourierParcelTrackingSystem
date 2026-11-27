@@ -11,7 +11,15 @@ namespace CourierParcelTrackingSystem.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _service;
-    public AuthController(IAuthService service) => _service = service;
+    private readonly IAuditLogService _auditLogService;
+
+    public AuthController(
+        IAuthService service,
+        IAuditLogService auditLogService)
+    {
+        _service = service;
+        _auditLogService = auditLogService;
+    }
 
     [HttpPost("bootstrap-admin")]
     [AllowAnonymous]
@@ -73,8 +81,11 @@ public class AuthController : ControllerBase
     // JWT logout is client-side: the client must discard its stored access token.
     [HttpPost("logout")]
     [Authorize]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
+        await _auditLogService.RecordAuthenticationEventAsync(
+            "LOGOUT",
+            CurrentUserId());
         return Ok(ApiResponse<string>.Ok(
             "Logout successful. Remove the access token from the client.",
             "Logout successful."));

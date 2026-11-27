@@ -13,6 +13,8 @@ public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        services.AddHttpContextAccessor();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IHubRepository, HubRepository>();
@@ -47,6 +49,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IParcelDelayPredictionService, ParcelDelayPredictionService>();
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
         return services;
     }
 }

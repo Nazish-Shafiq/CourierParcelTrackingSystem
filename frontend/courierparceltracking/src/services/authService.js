@@ -48,17 +48,22 @@ function normalizeUser(userData) {
 export async function bootstrapAdmin(request) {
   ensureApiUrl()
   ensureSecurePasswordTransport()
-  const response = await axiosInstance.post(`${AUTH_API_PATH}/bootstrap-admin`, request)
+  const response = await axiosInstance.post(
+    `${AUTH_API_PATH}/bootstrap-admin`,
+    request,
+    { skipAuthRedirect: true },
+  )
   return getResponseData(response.data)
 }
 
 export async function login({ userNameOrEmail, password }) {
   ensureApiUrl()
   ensureSecurePasswordTransport()
-  const response = await axiosInstance.post(`${AUTH_API_PATH}/login`, {
-    userNameOrEmail,
-    password,
-  })
+  const response = await axiosInstance.post(
+    `${AUTH_API_PATH}/login`,
+    { userNameOrEmail, password },
+    { skipAuthRedirect: true },
+  )
   const loginData = getResponseData(response.data)
 
   if (!loginData || typeof loginData.token !== 'string' || !loginData.token) {

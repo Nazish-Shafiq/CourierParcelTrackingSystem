@@ -15,6 +15,8 @@ public class ParcelTrackingResponseDto
 
     public string StatusCode { get; set; } = string.Empty;
 
+    public string? RouteName { get; set; }
+
     public int? HubId { get; set; }
 
     public string? HubName { get; set; }
@@ -22,6 +24,14 @@ public class ParcelTrackingResponseDto
     public string? OriginHubName { get; set; }
 
     public string? DestinationHubName { get; set; }
+
+    public string? CurrentHubName { get; set; }
+
+    public string? CurrentStatusName { get; set; }
+
+    public string? CurrentStatusCode { get; set; }
+
+    public string? DeliveryAddress { get; set; }
 
     public int? CourierId { get; set; }
 

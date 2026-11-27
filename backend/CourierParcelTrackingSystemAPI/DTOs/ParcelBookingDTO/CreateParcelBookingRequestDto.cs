@@ -15,7 +15,7 @@ public class CreateParcelBookingRequestDto
 
     // Parcel information.
     [Required]
-    [Range(typeof(decimal), "0.01", "999999999")]
+    [Range(typeof(decimal), "0.01", "9999999.999")]
     public decimal TotalWeightKg { get; set; }
 
     [Range(typeof(decimal), "0", "999999999")]
@@ -23,7 +23,7 @@ public class CreateParcelBookingRequestDto
 
     public DateTime? ExpectedDeliveryDate { get; set; }
 
-    [StringLength(1000)]
+    [StringLength(500)]
     public string? SpecialInstructions { get; set; }
 
     // Recipient information.

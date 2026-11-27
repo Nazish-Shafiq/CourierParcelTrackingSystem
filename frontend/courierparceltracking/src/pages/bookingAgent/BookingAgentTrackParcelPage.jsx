@@ -4,8 +4,10 @@ import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import FormInput from '../../components/forms/FormInput'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
+import ParcelRouteSummary from '../../components/common/ParcelRouteSummary'
 import PageHeader from '../../components/common/PageHeader'
 import StatusBadge from '../../components/common/StatusBadge'
+import TrackingEventDetails from '../../components/common/TrackingEventDetails'
 import { getTrackingHistory } from '../../services/trackingService'
 
 function formatDate(value) {
@@ -75,6 +77,7 @@ function BookingAgentTrackParcelPage() {
             <h3>Tracking history</h3>
             <span>{history[0].trackingNumber}</span>
           </div>
+          <ParcelRouteSummary data={history[0]} />
           <div className="booking-agent-timeline">
             {history
               .slice()
@@ -89,8 +92,7 @@ function BookingAgentTrackParcelPage() {
                     </div>
                     <p><strong>{event.statusName}</strong> ({event.statusCode})</p>
                     {event.notes && <p>{event.notes}</p>}
-                    {event.hubName && <p>Hub: {event.hubName}</p>}
-                    {event.courierName && <p>Courier: {event.courierName}</p>}
+                    <TrackingEventDetails event={event} />
                   </div>
                 </article>
               ))}

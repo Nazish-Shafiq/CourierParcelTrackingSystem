@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
+import TrackingEventDetails from '../../components/common/TrackingEventDetails'
 import PageHeader from '../../components/common/PageHeader'
 import RefreshButton from '../../components/common/RefreshButton'
 import StatusBadge from '../../components/common/StatusBadge'
@@ -30,11 +31,19 @@ function getTrackingDescription(event, parcel) {
   const originHub = event.originHubName || parcel.originHubName
   const destinationHub = event.destinationHubName || parcel.destinationHubName
   const eventHub = event.hubName
+  const deliveryAddress = event.deliveryAddress || [
+    parcel.recipient?.addressLine,
+    parcel.recipient?.city,
+    parcel.recipient?.province,
+    parcel.recipient?.postalCode,
+  ].filter(Boolean).join(', ')
 
   switch (statusCode) {
     case 'BOOKED':
-      return originHub
-        ? `Parcel booking created at ${originHub}.`
+      return originHub && destinationHub
+        ? `Parcel booked for delivery from ${originHub} to ${destinationHub}.`
+        : originHub
+          ? `Parcel booking created at ${originHub}.`
         : 'Parcel booking created.'
     case 'AT_ORIGIN_HUB': {
       const hub = originHub || eventHub
@@ -46,7 +55,7 @@ function getTrackingDescription(event, parcel) {
     }
     case 'IN_TRANSIT':
       return originHub && destinationHub
-        ? `Parcel is moving from ${originHub} to ${destinationHub}.`
+        ? `Current movement: ${originHub} to ${destinationHub}.`
         : 'Parcel is in transit.'
     case 'AT_DESTINATION_HUB': {
       const hub = destinationHub || eventHub
@@ -55,9 +64,9 @@ function getTrackingDescription(event, parcel) {
         : 'Parcel has arrived at the destination hub.'
     }
     case 'OUT_FOR_DELIVERY': {
-      const hub = destinationHub || eventHub
-      return hub
-        ? `Parcel is out for delivery from ${hub}.`
+      const location = deliveryAddress || destinationHub || eventHub
+      return location
+        ? `Parcel is out for delivery to ${location}.`
         : 'Parcel is out for delivery.'
     }
     case 'DELIVERY_ATTEMPTED': {
@@ -67,7 +76,9 @@ function getTrackingDescription(event, parcel) {
         : 'A delivery attempt was made.'
     }
     case 'DELIVERED':
-      return 'Parcel successfully delivered.'
+      return deliveryAddress
+        ? `Parcel successfully delivered to ${deliveryAddress}.`
+        : 'Parcel successfully delivered.'
     case 'ON_HOLD':
       return 'Parcel movement is on hold.'
     case 'RETURNED':
@@ -144,6 +155,7 @@ function CustomerParcelDetailsPage() {
               )}
               <div><dt>Origin Hub</dt><dd>{parcel.originHubName || 'Not Available'}</dd></div>
               <div><dt>Destination Hub</dt><dd>{parcel.destinationHubName || 'Not Available'}</dd></div>
+              <div><dt>Route</dt><dd>{parcel.routeName || 'Not Available'}</dd></div>
               <div><dt>Current Hub</dt><dd>{parcel.currentHubName || '—'}</dd></div>
               {parcel.currentStatusDescription && (
                 <div className="customer-dashboard__fact-wide">
@@ -178,7 +190,7 @@ function CustomerParcelDetailsPage() {
                         <time dateTime={event.eventAt}>{formatDate(event.eventAt, true)}</time>
                       </div>
                       <p>{getTrackingDescription(event, parcel)}</p>
-                      {event.hubName && <p className="customer-dashboard__timeline-location">{event.hubName}</p>}
+                      <TrackingEventDetails event={event} />
                     </div>
                   </li>
                 ))}

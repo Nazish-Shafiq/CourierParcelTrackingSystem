@@ -1,0 +1,28 @@
+.parcel-route-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.parcel-route-summary > div {
+  min-width: 0;
+}
+
+.parcel-route-summary dt {
+  margin-bottom: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.parcel-route-summary dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}

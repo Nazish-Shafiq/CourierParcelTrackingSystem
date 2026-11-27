@@ -740,6 +740,9 @@ export const parcelsConfig = {
     { key: "trackingNumber", label: "Tracking number" },
     { key: "senderName", label: "Sender" },
     { key: "routeName", label: "Route" },
+    { key: "originHubName", label: "Origin hub" },
+    { key: "destinationHubName", label: "Destination hub" },
+    { key: "currentHubName", label: "Current hub" },
     { key: "currentStatus", label: "Current status" },
     {
       key: "bookingDate",

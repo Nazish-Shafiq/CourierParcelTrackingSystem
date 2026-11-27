@@ -5,10 +5,12 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EmptyState from "../../components/common/EmptyState";
 import ErrorMessage from "../../components/common/ErrorMessage";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ParcelRouteSummary from "../../components/common/ParcelRouteSummary";
 import PageHeader from "../../components/common/PageHeader";
 import RefreshButton from "../../components/common/RefreshButton";
 import SearchBar from "../../components/common/SearchBar";
 import StatusBadge from "../../components/common/StatusBadge";
+import TrackingEventDetails from "../../components/common/TrackingEventDetails";
 import FormSelect from "../../components/forms/FormSelect";
 import FormTextArea from "../../components/forms/FormTextArea";
 import DataTable from "../../components/tables/DataTable";
@@ -278,8 +280,7 @@ function CourierParcelWorkflow({ onUpdated, parcel }) {
                     {event.statusName} <span>({event.statusCode})</span>
                   </h2>
                   {event.notes && <p>{event.notes}</p>}
-                  {event.hubName && <p>Hub: {event.hubName}</p>}
-                  {event.courierName && <p>Courier: {event.courierName}</p>}
+                  <TrackingEventDetails event={event} />
                 </div>
               </article>
             ))}
@@ -784,6 +785,10 @@ function CourierParcelDetailsPage() {
               <dd>{parcel.destinationHubName || "—"}</dd>
             </div>
             <div>
+              <dt>Current hub</dt>
+              <dd>{parcel.currentHubName || "—"}</dd>
+            </div>
+            <div>
               <dt>Assigned</dt>
               <dd>{formatDate(parcel.assignedAt)}</dd>
             </div>
@@ -877,6 +882,9 @@ function CourierParcelTrackingPage() {
           title="No tracking history"
         />
       )}
+      {tracking.data && (
+        <ParcelRouteSummary data={tracking.data.parcel} />
+      )}
       {tracking.data?.events.length > 0 && (
         <section
           aria-label="Parcel tracking events"
@@ -901,9 +909,8 @@ function CourierParcelTrackingPage() {
                 <h2>
                   {event.statusName} <span>({event.statusCode})</span>
                 </h2>
-                {event.hubName && <p>Hub: {event.hubName}</p>}
-                {event.courierName && <p>Courier: {event.courierName}</p>}
                 {event.notes && <p>{event.notes}</p>}
+                <TrackingEventDetails event={event} />
               </div>
             </article>
           ))}

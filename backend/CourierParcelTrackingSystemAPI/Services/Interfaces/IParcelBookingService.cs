@@ -16,5 +16,6 @@ public interface IParcelBookingService
 
     Task<ParcelBookingResponseDto> CreateBookingAsync(
         CreateParcelBookingRequestDto request,
-        int? createdBy);
+        int? createdBy,
+        string? idempotencyKey);
 }

@@ -6,16 +6,21 @@ using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 using CourierParcelTrackingSystem.API.Data; // Adjust if your ApplicationDbContext uses another namespace.
+using CourierParcelTrackingSystem.API.Services.Interfaces;
 
 namespace CourierParcelTrackingSystem.API.Repositories.Implementations;
 
 public class ParcelTrackingRepository : IParcelTrackingRepository
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAuditLogService _auditLogService;
 
-    public ParcelTrackingRepository(ApplicationDbContext context)
+    public ParcelTrackingRepository(
+        ApplicationDbContext context,
+        IAuditLogService auditLogService)
     {
         _context = context;
+        _auditLogService = auditLogService;
     }
 
     // Get all tracking events with pagination.
@@ -290,6 +295,23 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                     }
                 }
 
+                var parcelBefore = await _context.Parcels
+                    .Where(p => p.ParcelId == parcelId)
+                    .Select(p => new
+                    {
+                        p.CurrentStatusId,
+                        p.DeliveredAt,
+                        p.UpdatedAt,
+                        p.UpdatedBy
+                    })
+                    .SingleOrDefaultAsync();
+
+                if (parcelBefore is null)
+                {
+                    await transaction.RollbackAsync();
+                    return null;
+                }
+
                 var updatedParcels = await _context.Parcels
                     .Where(p =>
                         p.ParcelId == parcelId &&
@@ -322,8 +344,54 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                     return null;
                 }
 
+                await _auditLogService.RecordAsync(
+                    userId,
+                    "STATUS_CHANGE",
+                    nameof(Parcel),
+                    parcelId.ToString(),
+                    new Dictionary<string, object?>
+                    {
+                        [nameof(Parcel.CurrentStatusId)] = parcelBefore.CurrentStatusId,
+                        [nameof(Parcel.DeliveredAt)] = parcelBefore.DeliveredAt,
+                        [nameof(Parcel.UpdatedAt)] = parcelBefore.UpdatedAt,
+                        [nameof(Parcel.UpdatedBy)] = parcelBefore.UpdatedBy
+                    },
+                    new Dictionary<string, object?>
+                    {
+                        [nameof(Parcel.CurrentStatusId)] = targetStatusId,
+                        [nameof(Parcel.DeliveredAt)] = isDelivered
+                            ? eventAt
+                            : parcelBefore.DeliveredAt,
+                        [nameof(Parcel.UpdatedAt)] = eventAt,
+                        [nameof(Parcel.UpdatedBy)] = userId,
+                        ["StatusEventNotes"] = string.IsNullOrWhiteSpace(notes)
+                            ? null
+                            : notes.Trim()
+                    });
+
                 if (isDelivered || isDeliveryAttempted)
                 {
+                    var assignmentBefore = await _context.ParcelAssignments
+                        .Where(a =>
+                            a.ParcelAssignmentId == parcelAssignmentId &&
+                            a.CourierId == courierId &&
+                            a.UnassignedAt == null)
+                        .Select(a => new
+                        {
+                            a.UnassignedAt,
+                            a.UnassignedBy
+                        })
+                        .SingleOrDefaultAsync();
+                    var courierBefore = await _context.Couriers
+                        .Where(c => c.CourierId == courierId)
+                        .Select(c => new
+                        {
+                            c.IsAvailable,
+                            c.UpdatedAt,
+                            c.UpdatedBy
+                        })
+                        .SingleOrDefaultAsync();
+
                     var endedAssignments = await _context.ParcelAssignments
                         .Where(a =>
                             a.ParcelAssignmentId == parcelAssignmentId &&
@@ -355,6 +423,50 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
                         throw new DbUpdateConcurrencyException(
                             "The Courier assignment changed before the status could be recorded.");
                     }
+
+                    if (assignmentBefore is null)
+                    {
+                        throw new DbUpdateConcurrencyException(
+                            "The Courier assignment changed before the status could be recorded.");
+                    }
+                    if (courierBefore is null)
+                    {
+                        throw new DbUpdateConcurrencyException(
+                            "The Courier assignment changed before the status could be recorded.");
+                    }
+
+                    await _auditLogService.RecordAsync(
+                        userId,
+                        "UNASSIGN",
+                        nameof(ParcelAssignment),
+                        parcelAssignmentId.ToString(),
+                        new Dictionary<string, object?>
+                        {
+                            [nameof(ParcelAssignment.UnassignedAt)] = assignmentBefore.UnassignedAt,
+                            [nameof(ParcelAssignment.UnassignedBy)] = assignmentBefore.UnassignedBy
+                        },
+                        new Dictionary<string, object?>
+                        {
+                            [nameof(ParcelAssignment.UnassignedAt)] = eventAt,
+                            [nameof(ParcelAssignment.UnassignedBy)] = userId
+                        });
+                    await _auditLogService.RecordAsync(
+                        userId,
+                        "UPDATE",
+                        nameof(Courier),
+                        courierId.ToString(),
+                        new Dictionary<string, object?>
+                        {
+                            [nameof(Courier.IsAvailable)] = courierBefore.IsAvailable,
+                            [nameof(Courier.UpdatedAt)] = courierBefore.UpdatedAt,
+                            [nameof(Courier.UpdatedBy)] = courierBefore.UpdatedBy
+                        },
+                        new Dictionary<string, object?>
+                        {
+                            [nameof(Courier.IsAvailable)] = !hasOtherActiveAssignments,
+                            [nameof(Courier.UpdatedAt)] = eventAt,
+                            [nameof(Courier.UpdatedBy)] = userId
+                        });
                 }
 
                 var statusEvent = new StatusEvent
@@ -397,6 +509,12 @@ public class ParcelTrackingRepository : IParcelTrackingRepository
             .Include(e => e.Parcel)
                 .ThenInclude(p => p.Route)
                     .ThenInclude(r => r!.DestinationHub)
+            .Include(e => e.Parcel)
+                .ThenInclude(p => p.CurrentHub)
+            .Include(e => e.Parcel)
+                .ThenInclude(p => p.CurrentStatus)
+            .Include(e => e.Parcel)
+                .ThenInclude(p => p.ParcelRecipient)
             .Include(e => e.ParcelStatus)
             .Include(e => e.Hub)
             .Include(e => e.Courier);

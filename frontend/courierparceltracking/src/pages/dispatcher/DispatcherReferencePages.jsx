@@ -3,10 +3,12 @@ import { Link, useSearchParams } from 'react-router-dom'
 import Button from '../../components/common/Button'
 import EmptyState from '../../components/common/EmptyState'
 import ErrorMessage from '../../components/common/ErrorMessage'
+import ParcelRouteSummary from '../../components/common/ParcelRouteSummary'
 import PageHeader from '../../components/common/PageHeader'
 import RefreshButton from '../../components/common/RefreshButton'
 import SearchBar from '../../components/common/SearchBar'
 import StatusBadge from '../../components/common/StatusBadge'
+import TrackingEventDetails from '../../components/common/TrackingEventDetails'
 import FormInput from '../../components/forms/FormInput'
 import DataTable from '../../components/tables/DataTable'
 import Pagination from '../../components/tables/Pagination'
@@ -298,6 +300,7 @@ function DispatcherTrackingPage() {
               <p className="dispatcher-list-card__description">{history[0].trackingNumber}</p>
             </div>
           </div>
+          <ParcelRouteSummary data={history[0]} />
           <div className="dispatcher-tracking-timeline">
             {history.map((event) => (
               <article className="dispatcher-tracking-event" key={event.statusEventId}>
@@ -309,8 +312,7 @@ function DispatcherTrackingPage() {
                   </div>
                   <p><strong>{event.statusName}</strong> ({event.statusCode})</p>
                   {event.notes && <p>{event.notes}</p>}
-                  {event.hubName && <p>Hub: {event.hubName}</p>}
-                  {event.courierName && <p>Courier: {event.courierName}</p>}
+                  <TrackingEventDetails event={event} />
                 </div>
               </article>
             ))}

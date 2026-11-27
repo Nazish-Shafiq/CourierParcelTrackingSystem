@@ -103,6 +103,7 @@ public class CustomerDashboardService : ICustomerDashboardService
         CurrentStatusName = parcel.CurrentStatus.StatusName,
         CurrentStatusCode = parcel.CurrentStatus.StatusCode,
         CurrentStatusDescription = parcel.CurrentStatus.Description,
+        RouteName = parcel.Route?.RouteName,
         OriginHubName = parcel.Route?.OriginHub?.HubName,
         DestinationHubName = parcel.Route?.DestinationHub?.HubName,
         CurrentHubName = parcel.CurrentHub?.HubName,
@@ -137,11 +138,29 @@ public class CustomerDashboardService : ICustomerDashboardService
                 StatusName = statusEvent.ParcelStatus.StatusName,
                 StatusCode = statusEvent.ParcelStatus.StatusCode,
                 Description = statusEvent.ParcelStatus.Description,
+                RouteName = parcel.Route?.RouteName,
                 HubName = statusEvent.Hub?.HubName,
                 OriginHubName = parcel.Route?.OriginHub?.HubName,
                 DestinationHubName = parcel.Route?.DestinationHub?.HubName,
+                CourierName = statusEvent.Courier?.FullName,
+                DeliveryAddress = parcel.ParcelRecipient is { IsActive: true, IsDeleted: false } recipient
+                    ? FormatDeliveryAddress(recipient)
+                    : null,
                 EventAt = statusEvent.EventAt
             })
             .ToList()
     };
+
+    private static string? FormatDeliveryAddress(ParcelRecipient recipient)
+    {
+        var address = string.Join(", ", new[]
+        {
+            recipient.AddressLine,
+            recipient.City,
+            recipient.Province,
+            recipient.PostalCode
+        }.Where(part => !string.IsNullOrWhiteSpace(part)));
+
+        return string.IsNullOrWhiteSpace(address) ? null : address;
+    }
 }

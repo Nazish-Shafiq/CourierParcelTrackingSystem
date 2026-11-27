@@ -273,6 +273,9 @@ public class DashboardRepository : IDashboardRepository
                         DestinationHubName = a.Parcel.Route != null
                             ? a.Parcel.Route.DestinationHub.HubName
                             : null,
+                        CurrentHubName = a.Parcel.CurrentHub != null
+                            ? a.Parcel.CurrentHub.HubName
+                            : null,
                         AssignmentNotes = a.AssignmentNotes,
                         CurrentStatus = a.Parcel.CurrentStatus.StatusName,
                         CurrentStatusCode = a.Parcel.CurrentStatus.StatusCode,
@@ -332,6 +335,9 @@ public class DashboardRepository : IDashboardRepository
                             : null,
                         DestinationHubName = a.Parcel.Route != null
                             ? a.Parcel.Route.DestinationHub.HubName
+                            : null,
+                        CurrentHubName = a.Parcel.CurrentHub != null
+                            ? a.Parcel.CurrentHub.HubName
                             : null,
                         AssignmentNotes = a.AssignmentNotes,
                         CurrentStatus = a.Parcel.CurrentStatus.StatusName,

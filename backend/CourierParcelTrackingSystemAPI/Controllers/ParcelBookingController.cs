@@ -74,14 +74,19 @@ public class ParcelBookingController : ControllerBase
     [HttpPost]
     [ScreenAccess("/booking/book-parcel")]
     public async Task<IActionResult> Create(
-        [FromBody] CreateParcelBookingRequestDto request)
+        [FromBody] CreateParcelBookingRequestDto request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)
     {
         int? createdBy = GetCurrentUserId();
 
-        var result = await _service.CreateBookingAsync(request, createdBy);
+        var result = await _service.CreateBookingAsync(
+            request,
+            createdBy,
+            idempotencyKey);
 
-        return StatusCode(
-            StatusCodes.Status201Created,
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = result.ParcelId },
             ApiResponse<ParcelBookingResponseDto>.Ok(
                 result,
                 "Parcel booked successfully."));

@@ -4,6 +4,9 @@ using CourierParcelTrackingSystem.API.DTOs.ParcelBookingDTO;
 using CourierParcelTrackingSystem.API.Entities;
 using CourierParcelTrackingSystem.API.Repositories.Interfaces;
 using CourierParcelTrackingSystem.API.Services.Interfaces;
+using System.Security.Cryptography;
+using System.Text;
+using RouteEntity = CourierParcelTrackingSystem.API.Entities.Route;
 
 namespace CourierParcelTrackingSystem.API.Services;
 
@@ -53,63 +56,94 @@ public class ParcelBookingService : IParcelBookingService
     // Create a new parcel booking.
     public async Task<ParcelBookingResponseDto> CreateBookingAsync(
         CreateParcelBookingRequestDto request,
-        int? createdBy)
+        int? createdBy,
+        string? idempotencyKey)
     {
-        // Validate sender customer.
-        bool customerExists =
-            await _repository.CustomerExistsAsync(request.SenderCustomerId);
+        var normalizedIdempotencyKey = string.IsNullOrWhiteSpace(idempotencyKey)
+            ? null
+            : idempotencyKey.Trim();
+        var trackingNumber = GenerateTrackingNumber(
+            normalizedIdempotencyKey,
+            createdBy);
 
-        if (!customerExists)
+        if (normalizedIdempotencyKey is not null)
+        {
+            var existingBooking = await _repository.GetByTrackingNumberAsync(
+                trackingNumber);
+            if (existingBooking is not null)
+            {
+                if (!MatchesBookingRequest(
+                    existingBooking,
+                    request,
+                    createdBy))
+                {
+                    throw new InvalidOperationException(
+                        "This idempotency key was already used for a different parcel booking.");
+                }
+
+                return MapToResponse(existingBooking);
+            }
+        }
+        else
+        {
+            while (await _repository.TrackingNumberExistsAsync(trackingNumber))
+                trackingNumber = GenerateTrackingNumber(null, createdBy);
+        }
+
+        var senderCustomer = await _repository.GetActiveCustomerAsync(
+            request.SenderCustomerId);
+        if (senderCustomer is null)
         {
             throw new ArgumentException(
                 "Selected sender customer does not exist or is inactive.");
         }
 
-        // Validate route when supplied.
+        RouteEntity? route = null;
         if (request.RouteId.HasValue)
         {
-            bool routeExists =
-                await _repository.RouteExistsAsync(request.RouteId.Value);
-
-            if (!routeExists)
+            route = await _repository.GetActiveRouteAsync(request.RouteId.Value);
+            if (route is null)
             {
                 throw new ArgumentException(
                     "Selected route does not exist or is inactive.");
             }
         }
 
-        // Find the initial BOOKED status.
         var bookedStatus = await _repository.GetBookedStatusAsync();
-
         if (bookedStatus == null)
         {
             throw new InvalidOperationException(
                 "The active BOOKED parcel status was not found. Please configure it first.");
         }
 
-        // Generate a unique tracking number.
-        string trackingNumber;
+        var now = DateTime.UtcNow;
+        var normalizedExpectedDeliveryDate = TruncateToSeconds(
+            request.ExpectedDeliveryDate);
+        var normalizedWeight = decimal.Round(
+            request.TotalWeightKg,
+            3,
+            MidpointRounding.AwayFromZero);
+        decimal? normalizedDeclaredValue = request.DeclaredValue.HasValue
+            ? decimal.Round(
+                request.DeclaredValue.Value,
+                2,
+                MidpointRounding.AwayFromZero)
+            : (decimal?)null;
 
-        do
-        {
-            trackingNumber = GenerateTrackingNumber();
-
-        } while (await _repository.TrackingNumberExistsAsync(trackingNumber));
-
-        DateTime now = DateTime.UtcNow;
-
-        // Create Parcel entity.
         var parcel = new Parcel
         {
             TrackingNumber = trackingNumber,
             SenderCustomerId = request.SenderCustomerId,
+            SenderCustomer = senderCustomer,
             RouteId = request.RouteId,
+            Route = route,
             CurrentStatusId = bookedStatus.ParcelStatusId,
+            CurrentStatus = bookedStatus,
             BookingDate = now,
-            ExpectedDeliveryDate = request.ExpectedDeliveryDate,
+            ExpectedDeliveryDate = normalizedExpectedDeliveryDate,
             DeliveredAt = null,
-            TotalWeightKg = request.TotalWeightKg,
-            DeclaredValue = request.DeclaredValue,
+            TotalWeightKg = normalizedWeight,
+            DeclaredValue = normalizedDeclaredValue,
             SpecialInstructions = Normalize(request.SpecialInstructions),
             IsActive = true,
             IsDeleted = false,
@@ -117,7 +151,6 @@ public class ParcelBookingService : IParcelBookingService
             CreatedBy = createdBy
         };
 
-        // Create recipient entity.
         var recipient = new ParcelRecipient
         {
             RecipientName = request.RecipientName.Trim(),
@@ -132,37 +165,89 @@ public class ParcelBookingService : IParcelBookingService
             IsActive = true,
             IsDeleted = false
         };
+        parcel.ParcelRecipient = recipient;
 
         parcel.StatusEvents.Add(new StatusEvent
         {
             ParcelStatusId = bookedStatus.ParcelStatusId,
+            ParcelStatus = bookedStatus,
             EventAt = now,
             CreatedAt = now,
             CreatedBy = createdBy
         });
 
-        // Save the parcel, recipient, and initial tracking event together.
-        await _repository.AddBookingAsync(parcel, recipient);
-
-        // Reload the saved booking with its navigation properties.
-        var savedParcel = await _repository.GetByIdAsync(parcel.ParcelId);
-
-        if (savedParcel == null)
+        var savedParcel = await _repository.AddBookingAsync(
+            parcel,
+            recipient,
+            normalizedIdempotencyKey is not null);
+        if (normalizedIdempotencyKey is not null &&
+            !MatchesBookingRequest(savedParcel, request, createdBy))
         {
             throw new InvalidOperationException(
-                "Parcel booking was created but could not be retrieved.");
+                "This idempotency key was already used for a different parcel booking.");
         }
 
         return MapToResponse(savedParcel);
     }
 
-    // Generate a tracking number.
-    private static string GenerateTrackingNumber()
+    private static string GenerateTrackingNumber(
+        string? idempotencyKey,
+        int? createdBy)
     {
-        return $"CPT-{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
+        if (idempotencyKey is null)
+            return $"CPT-{Guid.NewGuid():N}".ToUpperInvariant();
+
+        if (!Guid.TryParseExact(idempotencyKey, "D", out var requestId))
+            throw new ArgumentException(
+                "The Idempotency-Key header must contain a UUID.");
+
+        var scopedKey = $"{createdBy?.ToString() ?? "anonymous"}:{requestId:N}";
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(scopedKey));
+        return $"CPT-{Convert.ToHexString(hash.AsSpan(0, 16))}";
     }
 
-    // Convert empty strings into null.
+    private static bool MatchesBookingRequest(
+        Parcel parcel,
+        CreateParcelBookingRequestDto request,
+        int? createdBy)
+    {
+        var recipient = parcel.ParcelRecipient;
+        return parcel.CreatedBy == createdBy &&
+            parcel.SenderCustomerId == request.SenderCustomerId &&
+            parcel.RouteId == request.RouteId &&
+            parcel.TotalWeightKg == decimal.Round(
+                request.TotalWeightKg,
+                3,
+                MidpointRounding.AwayFromZero) &&
+            parcel.DeclaredValue == (request.DeclaredValue.HasValue
+                ? decimal.Round(
+                    request.DeclaredValue.Value,
+                    2,
+                    MidpointRounding.AwayFromZero)
+                : (decimal?)null) &&
+            parcel.ExpectedDeliveryDate == TruncateToSeconds(
+                request.ExpectedDeliveryDate) &&
+            parcel.SpecialInstructions == Normalize(request.SpecialInstructions) &&
+            recipient is not null &&
+            recipient.RecipientName == request.RecipientName.Trim() &&
+            recipient.Phone == request.RecipientPhone.Trim() &&
+            recipient.Email == Normalize(request.RecipientEmail) &&
+            recipient.AddressLine == request.RecipientAddressLine.Trim() &&
+            recipient.City == request.RecipientCity.Trim() &&
+            recipient.Province == Normalize(request.RecipientProvince) &&
+            recipient.PostalCode == Normalize(request.RecipientPostalCode);
+    }
+
+    private static DateTime? TruncateToSeconds(DateTime? value)
+    {
+        if (!value.HasValue)
+            return null;
+
+        var dateTime = value.Value;
+        var ticks = dateTime.Ticks - dateTime.Ticks % TimeSpan.TicksPerSecond;
+        return new DateTime(ticks, dateTime.Kind);
+    }
+
     private static string? Normalize(string? value)
     {
         return string.IsNullOrWhiteSpace(value)

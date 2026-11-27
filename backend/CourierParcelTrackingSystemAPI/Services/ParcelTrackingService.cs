@@ -338,6 +338,7 @@ public class ParcelTrackingService : IParcelTrackingService
                 ?? string.Empty,
             StatusCode = statusEvent.ParcelStatus?.StatusCode
                 ?? string.Empty,
+            RouteName = statusEvent.Parcel?.Route?.RouteName,
             HubId = statusEvent.HubId,
             HubName = statusEvent.Hub?.HubName,
             OriginHubName = RouteHubName(
@@ -346,6 +347,10 @@ public class ParcelTrackingService : IParcelTrackingService
             DestinationHubName = RouteHubName(
                 statusEvent.Parcel?.Route,
                 statusEvent.Parcel?.Route?.DestinationHub),
+            CurrentHubName = statusEvent.Parcel?.CurrentHub?.HubName,
+            CurrentStatusName = statusEvent.Parcel?.CurrentStatus?.StatusName,
+            CurrentStatusCode = statusEvent.Parcel?.CurrentStatus?.StatusCode,
+            DeliveryAddress = GetDeliveryAddress(statusEvent.Parcel),
             CourierId = statusEvent.CourierId,
             CourierName = statusEvent.Courier?.FullName,
             EventAt = statusEvent.EventAt,
@@ -356,4 +361,21 @@ public class ParcelTrackingService : IParcelTrackingService
 
     private static string? RouteHubName(RouteEntity? route, Hub? hub) =>
         route is not null ? hub?.HubName : null;
+
+    private static string? GetDeliveryAddress(Parcel? parcel)
+    {
+        var recipient = parcel?.ParcelRecipient;
+        if (recipient is not { IsActive: true, IsDeleted: false })
+            return null;
+
+        var address = string.Join(", ", new[]
+        {
+            recipient.AddressLine,
+            recipient.City,
+            recipient.Province,
+            recipient.PostalCode
+        }.Where(part => !string.IsNullOrWhiteSpace(part)));
+
+        return string.IsNullOrWhiteSpace(address) ? null : address;
+    }
 }

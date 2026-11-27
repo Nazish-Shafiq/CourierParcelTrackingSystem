@@ -28,6 +28,34 @@ const initialForm = {
   recipientPostalCode: '',
 }
 
+const BOOKING_IDEMPOTENCY_KEY = 'courierParcelTracking.parcelBookingIdempotencyKey'
+const BOOKING_REQUEST_FINGERPRINT = 'courierParcelTracking.parcelBookingFingerprint'
+
+function createBookingIdempotencyKey() {
+  if (!window.crypto?.randomUUID) {
+    throw new Error('This browser does not support secure booking request IDs.')
+  }
+
+  const key = window.crypto.randomUUID()
+  window.sessionStorage.setItem(BOOKING_IDEMPOTENCY_KEY, key)
+  return key
+}
+
+function getBookingIdempotencyKey() {
+  const key = window.sessionStorage.getItem(BOOKING_IDEMPOTENCY_KEY)
+  return key && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key)
+    ? key
+    : createBookingIdempotencyKey()
+}
+
+async function getBookingFingerprint(payload) {
+  const encoded = new TextEncoder().encode(JSON.stringify(payload))
+  const digest = await window.crypto.subtle.digest('SHA-256', encoded)
+  return Array.from(new Uint8Array(digest), (byte) => (
+    byte.toString(16).padStart(2, '0')
+  )).join('')
+}
+
 function toOptions(records, idField, labelBuilder) {
   const seenIds = new Set()
 
@@ -55,6 +83,7 @@ function BookingAgentBookParcelPage() {
   const [customers, setCustomers] = useState([])
   const [routes, setRoutes] = useState([])
   const [formValues, setFormValues] = useState(initialForm)
+  const [idempotencyKey, setIdempotencyKey] = useState(getBookingIdempotencyKey)
   const [isLoadingOptions, setIsLoadingOptions] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -105,6 +134,7 @@ function BookingAgentBookParcelPage() {
   function handleChange(event) {
     const { name, value } = event.target
     setFormValues((current) => ({ ...current, [name]: value }))
+    setConfirmation(null)
     if (submitError) setSubmitError(null)
   }
 
@@ -139,9 +169,25 @@ function BookingAgentBookParcelPage() {
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      const result = await createParcelBooking(payload)
+      const fingerprint = await getBookingFingerprint(payload)
+      const previousFingerprint = window.sessionStorage.getItem(
+        BOOKING_REQUEST_FINGERPRINT,
+      )
+      const requestKey = previousFingerprint &&
+        previousFingerprint !== fingerprint
+        ? createBookingIdempotencyKey()
+        : idempotencyKey
+      setIdempotencyKey(requestKey)
+      window.sessionStorage.setItem(
+        BOOKING_REQUEST_FINGERPRINT,
+        fingerprint,
+      )
+
+      const result = await createParcelBooking(payload, requestKey)
       setConfirmation(result)
       setFormValues(initialForm)
+      window.sessionStorage.removeItem(BOOKING_REQUEST_FINGERPRINT)
+      setIdempotencyKey(createBookingIdempotencyKey())
     } catch (error) {
       setSubmitError(error)
     } finally {
@@ -200,6 +246,7 @@ function BookingAgentBookParcelPage() {
                   <FormInput
                     id="totalWeightKg"
                     label="Total weight (kg)"
+                    max="9999999.999"
                     min="0.01"
                     name="totalWeightKg"
                     onChange={handleChange}
@@ -249,6 +296,7 @@ function BookingAgentBookParcelPage() {
                     <FormTextArea
                       id="specialInstructions"
                       label="Special instructions"
+                      maxLength={500}
                       name="specialInstructions"
                       onChange={handleChange}
                       rows={4}

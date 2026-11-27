@@ -1,5 +1,6 @@
 ﻿using CourierParcelTrackingSystem.API.DTOs.Common;
 using CourierParcelTrackingSystem.API.Entities;
+using RouteEntity = CourierParcelTrackingSystem.API.Entities.Route;
 
 namespace CourierParcelTrackingSystem.API.Repositories.Interfaces;
 
@@ -14,13 +15,18 @@ public interface IParcelBookingRepository
 
     Task<Parcel?> GetByIdAsync(long id);
 
-    Task<bool> CustomerExistsAsync(int customerId);
+    Task<Parcel?> GetByTrackingNumberAsync(string trackingNumber);
 
-    Task<bool> RouteExistsAsync(int routeId);
+    Task<Customer?> GetActiveCustomerAsync(int customerId);
+
+    Task<RouteEntity?> GetActiveRouteAsync(int routeId);
 
     Task<ParcelStatus?> GetBookedStatusAsync();
 
     Task<bool> TrackingNumberExistsAsync(string trackingNumber);
 
-    Task AddBookingAsync(Parcel parcel, ParcelRecipient recipient);
+    Task<Parcel> AddBookingAsync(
+        Parcel parcel,
+        ParcelRecipient recipient,
+        bool resolveIdempotentConflict);
 }

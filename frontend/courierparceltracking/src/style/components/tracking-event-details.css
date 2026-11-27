@@ -1,0 +1,16 @@
+.tracking-event-details {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.84rem;
+}
+
+.tracking-event-details p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tracking-event-details strong {
+  color: var(--color-text);
+}

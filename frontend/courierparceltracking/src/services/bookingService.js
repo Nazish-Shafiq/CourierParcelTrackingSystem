@@ -30,7 +30,11 @@ export async function getParcelBookingById(id, signal) {
   return getResponseData(response.data)
 }
 
-export async function createParcelBooking(request) {
-  const response = await axiosInstance.post(API_PATHS.parcelBookings, request)
+export async function createParcelBooking(request, idempotencyKey) {
+  const response = await axiosInstance.post(
+    API_PATHS.parcelBookings,
+    request,
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  )
   return getResponseData(response.data)
 }

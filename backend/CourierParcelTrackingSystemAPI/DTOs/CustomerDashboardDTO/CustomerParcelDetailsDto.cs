@@ -13,6 +13,7 @@ public class CustomerParcelDetailsDto
     public string CurrentStatusName { get; set; } = string.Empty;
     public string CurrentStatusCode { get; set; } = string.Empty;
     public string? CurrentStatusDescription { get; set; }
+    public string? RouteName { get; set; }
     public string? OriginHubName { get; set; }
     public string? DestinationHubName { get; set; }
     public string? CurrentHubName { get; set; }
@@ -38,8 +39,11 @@ public class CustomerTrackingEventDto
     public string StatusName { get; set; } = string.Empty;
     public string StatusCode { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? RouteName { get; set; }
     public string? HubName { get; set; }
     public string? OriginHubName { get; set; }
     public string? DestinationHubName { get; set; }
+    public string? CourierName { get; set; }
+    public string? DeliveryAddress { get; set; }
     public DateTime EventAt { get; set; }
 }

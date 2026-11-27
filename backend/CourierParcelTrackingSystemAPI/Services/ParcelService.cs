@@ -62,6 +62,9 @@ public class ParcelService : IParcelService
         ParcelId = p.ParcelId, TrackingNumber = p.TrackingNumber,
         SenderCustomerId = p.SenderCustomerId, SenderName = p.SenderCustomer.FullName,
         RouteId = p.RouteId, RouteName = p.Route?.RouteName,
+        OriginHubName = p.Route?.OriginHub?.HubName,
+        DestinationHubName = p.Route?.DestinationHub?.HubName,
+        CurrentHubName = p.CurrentHub?.HubName,
         CurrentStatusId = p.CurrentStatusId, CurrentStatus = p.CurrentStatus.StatusName,
         BookingDate = p.BookingDate, ExpectedDeliveryDate = p.ExpectedDeliveryDate,
         DeliveredAt = p.DeliveredAt ?? p.StatusEvents

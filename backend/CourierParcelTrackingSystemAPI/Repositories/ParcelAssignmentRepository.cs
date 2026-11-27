@@ -103,6 +103,10 @@ public class ParcelAssignmentRepository : IParcelAssignmentRepository
             .Include(p => p.SenderCustomer)
             .Include(p => p.CurrentStatus)
             .Include(p => p.Route)
+                .ThenInclude(r => r!.OriginHub)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.DestinationHub)
+            .Include(p => p.CurrentHub)
             .OrderByDescending(p => p.BookingDate)
             .ThenByDescending(p => p.ParcelId)
             .ToListAsync();

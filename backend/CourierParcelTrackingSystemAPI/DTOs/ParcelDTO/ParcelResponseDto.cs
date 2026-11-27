@@ -8,6 +8,9 @@ public class ParcelResponseDto
     public string SenderName { get; set; } = string.Empty;
     public int? RouteId { get; set; }
     public string? RouteName { get; set; }
+    public string? OriginHubName { get; set; }
+    public string? DestinationHubName { get; set; }
+    public string? CurrentHubName { get; set; }
     public int CurrentStatusId { get; set; }
     public string CurrentStatus { get; set; } = string.Empty;
     public DateTime BookingDate { get; set; }

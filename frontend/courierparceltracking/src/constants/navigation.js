@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Boxes,
+  ClipboardCheck,
   ClipboardList,
   Clock3,
   FileBarChart,
@@ -62,6 +63,7 @@ export const ROLE_NAVIGATION = {
   [ROLE_NAMES.ADMIN]: [
     { label: "Users", path: "/admin/users", icon: Users },
     { label: "Screen Assignments", path: "/admin/screen-assignments", icon: ClipboardList },
+    { label: "Audit Logs", path: "/admin/audit-logs", icon: ClipboardCheck },
     { label: "Customers", path: "/admin/customers", icon: Users },
     { label: "Couriers", path: "/admin/couriers", icon: Truck },
     { label: "Hubs", path: "/admin/hubs", icon: Warehouse },

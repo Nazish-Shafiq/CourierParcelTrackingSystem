@@ -23,7 +23,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     const apiError = normalizeApiError(error)
-    if (apiError.status === 401 && getAccessToken()) {
+    if (apiError.status === 401 && !error.config?.skipAuthRedirect) {
       clearAccessToken()
       window.dispatchEvent(new Event('auth:unauthorized'))
     }

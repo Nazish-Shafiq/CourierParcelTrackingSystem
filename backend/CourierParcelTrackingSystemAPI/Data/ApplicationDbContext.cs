@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using CourierParcelTrackingSystem.API.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using RouteEntity = CourierParcelTrackingSystem.API.Entities.Route;
 
@@ -9,9 +10,19 @@ namespace CourierParcelTrackingSystem.API.Data;
 
 public partial class ApplicationDbContext : DbContext
 {
+    private readonly IHttpContextAccessor? _httpContextAccessor;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
+    }
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        IHttpContextAccessor httpContextAccessor)
+        : base(options)
+    {
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public virtual DbSet<AiModel> AiModels { get; set; }

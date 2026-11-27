@@ -29,6 +29,7 @@ public class CourierAssignedParcelDto
     public string? RouteName { get; set; }
     public string? OriginHubName { get; set; }
     public string? DestinationHubName { get; set; }
+    public string? CurrentHubName { get; set; }
     public string? AssignmentNotes { get; set; }
 
     public string CurrentStatus { get; set; } = string.Empty;

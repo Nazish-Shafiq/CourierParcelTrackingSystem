@@ -17,7 +17,11 @@ public class ParcelRepository : IParcelRepository
             .Where(p => p.IsActive && !p.IsDeleted)
             .Include(p => p.SenderCustomer)
             .Include(p => p.CurrentStatus)
-            .Include(p => p.Route);
+            .Include(p => p.CurrentHub)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.OriginHub)
+            .Include(p => p.Route)
+                .ThenInclude(r => r!.DestinationHub);
 
     public Task<List<Parcel>> GetAllAsync() =>
         ParcelQuery().OrderByDescending(p => p.BookingDate).ToListAsync();
@@ -120,6 +124,8 @@ public class ParcelRepository : IParcelRepository
                 .ThenInclude(r => r!.DestinationHub)
             .Include(p => p.StatusEvents)
                 .ThenInclude(e => e.ParcelStatus)
+            .Include(p => p.StatusEvents)
+                .ThenInclude(e => e.Courier)
             .Include(p => p.StatusEvents)
                 .ThenInclude(e => e.Hub);
 

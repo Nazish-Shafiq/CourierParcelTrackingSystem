@@ -21,6 +21,7 @@ public class AuthService : IAuthService
     private readonly IAuthRepository _repository;
     private readonly ICourierRepository _courierRepository;
     private readonly IHubRepository _hubRepository;
+    private readonly IAuditLogService _auditLogService;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly JwtSettings _jwt;
     private readonly IConfiguration _configuration;
@@ -29,12 +30,14 @@ public class AuthService : IAuthService
         IAuthRepository repository,
         ICourierRepository courierRepository,
         IHubRepository hubRepository,
+        IAuditLogService auditLogService,
         IPasswordHasher<User> passwordHasher,
         IOptions<JwtSettings> jwtOptions, IConfiguration configuration)
     {
         _repository = repository;
         _courierRepository = courierRepository;
         _hubRepository = hubRepository;
+        _auditLogService = auditLogService;
         _passwordHasher = passwordHasher;
         _jwt = jwtOptions.Value;
         _configuration = configuration;
@@ -161,10 +164,22 @@ public class AuthService : IAuthService
     {
         var identifier = request.UserNameOrEmail.Trim();
         var user = await _repository.GetUserForLoginAsync(identifier);
-        if (user == null) return null;
+        if (user == null)
+        {
+            await _auditLogService.RecordAuthenticationEventAsync(
+                "LOGIN_FAILED",
+                null);
+            return null;
+        }
 
         var verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
-        if (verification == PasswordVerificationResult.Failed) return null;
+        if (verification == PasswordVerificationResult.Failed)
+        {
+            await _auditLogService.RecordAuthenticationEventAsync(
+                "LOGIN_FAILED",
+                null);
+            return null;
+        }
 
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
         {
@@ -173,12 +188,29 @@ public class AuthService : IAuthService
         }
 
         user = await _repository.GetUserWithRolesAsync(user.UserId);
-        if (user == null) return null;
+        if (user == null)
+        {
+            await _auditLogService.RecordAuthenticationEventAsync(
+                "LOGIN_FAILED",
+                null);
+            return null;
+        }
         var roles = user.UserRoleUsers
             .Where(x => x.Role.IsActive && !x.Role.IsDeleted)
             .Select(x => x.Role.RoleName).Distinct().ToList();
-        if (roles.Count == 0) return null;
-        return CreateJwtResponse(user, roles);
+        if (roles.Count == 0)
+        {
+            await _auditLogService.RecordAuthenticationEventAsync(
+                "LOGIN_FAILED",
+                null);
+            return null;
+        }
+
+        var response = CreateJwtResponse(user, roles);
+        await _auditLogService.RecordAuthenticationEventAsync(
+            "LOGIN",
+            user.UserId);
+        return response;
     }
 
     public async Task<LoginResponseDto?> GetCurrentUserAsync(int userId)
